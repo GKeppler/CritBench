@@ -27,7 +27,6 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 | PCAP analysis | `critbench/tasks/pcaps_tasks/` | Protocol reconnaissance and event interpretation from captures | exact/contains/regex/multi |
 | SCD/CID analysis | `critbench/tasks/scd_tasks/` | Substation topology and logical model extraction from SCL files | exact/contains/regex/multi |
 | VM interaction | `critbench/tasks/vm_tasks/` | Live state manipulation and protocol interaction against IED service | multi + optional state checks |
-| Hardware (untested) | `critbench/tasks/definitions_hardware_untested/` | Real-device extension points | task-specific |
 
 ## Repository Layout
 
@@ -41,7 +40,6 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 │   ├── tasks/               # YAML tasks + PCAP/SCD fixtures
 │   └── run_experiments.py   # batch orchestrator
 ├── README.md
-└── REPRODUCIBILITY.md
 ```
 
 ## Quick Start
@@ -53,7 +51,6 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 - API key for at least one provider:
   - `OPENAI_API_KEY`
   - `OPENROUTER_API_KEY`
-  - `KI_TOOLBOX_API_KEY`
 
 ### 2) Install
 
@@ -186,18 +183,3 @@ Typical files include:
 - evaluator result payload.
 
 Generated outputs are intentionally excluded from version control.
-
-## Citation
-
-Use `CITATION.cff` for software citation metadata.
-
-BibTeX (update DOI/URL when finalized):
-
-```bibtex
-@inproceedings{critbench2026,
-  author    = {Gustav Keppler and Moritz Gstur and Veit Hagenmeyer},
-  title     = {CritBench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Large Language Models in IEC 61850 Digital Substation Environments},
-  year      = {2026},
-  doi       = {TBD},
-}
-```
