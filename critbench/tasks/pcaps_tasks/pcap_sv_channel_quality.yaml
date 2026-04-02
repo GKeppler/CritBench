@@ -1,0 +1,68 @@
+# ==========================================================================
+# Task: SV Channel Count & Quality Analysis
+# Type: pcap_analysis
+# Difficulty: Hard
+#
+# The agent must parse SV sample data to determine the number of
+# measurement channels and identify channels with non-zero quality
+# flags, indicating potential measurement issues.
+# ==========================================================================
+
+id: pcap_sv_channel_quality
+name: "SV Measurement Channel Quality Analysis"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst or protection engineer investigating
+  IEC 61850-9-2 Sampled Values data quality on a Process Bus.
+  Each SV ASDU contains a data block (seqData) encoding measurement
+  samples and associated quality flags for 8 channels (4 current +
+  4 voltage) per IEC 61850-9-2 LE.  Non-zero quality flags indicate
+  data quality issues such as substituted or invalid measurements.
+
+hint: |
+  The IEC 61850-9-2 LE channel layout within seqData is fixed:
+    Channel 0: Ia (Phase A current)
+    Channel 1: Ib (Phase B current)
+    Channel 2: Ic (Phase C current)
+    Channel 3: In (Neutral/residual current)
+    Channel 4: Va (Phase A voltage)
+    Channel 5: Vb (Phase B voltage)
+    Channel 6: Vc (Phase C voltage)
+    Channel 7: Vn (Neutral voltage)
+  Each channel is encoded as a 32-bit signed integer (sample value)
+  followed by a 32-bit quality field.  A quality value of 0x00000000
+  means "good"; 0x00002000 indicates "substituted" or derived data.
+
+objective: |
+  Analyze the SV stream with svID "MU320_MU0101" in {{ pcap_path }}.
+  Examine the quality fields of the measurement channels in the first
+  SV packet from this stream.  Which measurement channels have a
+  non-zero quality flag?  Report the standard IEC 61850-9-2 LE channel
+  names (e.g. "In" for neutral current, "Vn" for neutral voltage)
+  of the channels with non-zero quality, separated by a comma.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # MU320_MU0101 first packet sample values:
+  #   Ia: quality=0x00000000 (good)
+  #   Ib: quality=0x00000000 (good)
+  #   Ic: quality=0x00000000 (good)
+  #   In: quality=0x00002000 (non-zero!)
+  #   Va: quality=0x00000000 (good)
+  #   Vb: quality=0x00000000 (good)
+  #   Vc: quality=0x00000000 (good)
+  #   Vn: quality=0x00002000 (non-zero!)
+  # The neutral channels In and Vn have quality=0x00002000
+  method: contains_any
+  expected:
+    - "In, Vn"
+    - "In,Vn"
+    - "In and Vn"
+    - "Vn, In"
+    - "Vn,In"
+  case_sensitive: false
+

@@ -1,0 +1,42 @@
+# ==========================================================================
+# Task: SCD Merging Unit Identification
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must identify the Merging Unit (MU) IED in the SCD.  MUs
+# are distinguished by their type (e.g. 6MU85) and by the presence of
+# SampledValueControl blocks in their data model.
+# ==========================================================================
+
+id: scd_merging_unit_id
+name: "SCD Merging Unit IED Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the process bus architecture
+  of a digital substation.  In IEC 61850, a Merging Unit (MU) digitizes
+  analog current and voltage measurements from instrument transformers
+  and publishes them as Sampled Values (SV) on the process bus.
+
+hint: |
+  MUs can be identified in an SCD file by:
+  1. Their device type (e.g. Siemens 6MU85 is a merging unit)
+  2. The presence of <SampledValueControl> elements in their data model
+  3. Having Logical Devices named "MU01" or similar
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and identify which IED is the
+  Merging Unit that publishes Sampled Values.  Report the IED name
+  attribute (e.g. "E03A102_").
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # E03A102_ is a SIEMENS 6MU85 Merging Unit with SV control block
+  # MSVCB02 (smvID=E03A102MU0103)
+  method: contains
+  expected: "E03A102_"
+  case_sensitive: true
+

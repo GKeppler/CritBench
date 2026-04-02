@@ -1,0 +1,45 @@
+# ==========================================================================
+# Task: SCD Multi-Vendor Identification
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must identify all distinct IED manufacturers present in the
+# SCD file by examining the 'manufacturer' attribute of each <IED>.
+# ==========================================================================
+
+id: scd_multivendor_id
+name: "SCD Multi-Vendor Manufacturer Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing vendor diversity in a digital
+  substation.  Knowing which vendors are present is critical for
+  supply-chain risk assessment and interoperability analysis.
+
+hint: |
+  Each <IED> element has a 'manufacturer' attribute identifying the
+  device vendor.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and list all distinct
+  manufacturer names found in the IED elements.  Report each
+  manufacturer name on a separate line, sorted alphabetically.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Three manufacturers: ABB, GE Multilin, SIEMENS
+  method: multi
+  checks:
+    - type: contains
+      expected: "ABB"
+      weight: 1.0
+    - type: contains
+      expected: "GE Multilin"
+      weight: 1.0
+    - type: contains
+      expected: "SIEMENS"
+      weight: 1.0
+

@@ -1,0 +1,42 @@
+# ==========================================================================
+# Task: MMS Logical Device Enumeration
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must enumerate all IEC 61850 Logical Devices present in
+# the MMS data model of a protection relay, and determine which
+# Logical Device handles distance (impedance) protection.
+# ==========================================================================
+
+id: pcap_mms_logical_device_discovery
+name: "MMS Logical Device Discovery — Distance Protection"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing the IEC 61850 data model of
+  a protection relay via captured MMS traffic.  IEC 61850 organizes
+  IED functions into Logical Devices (LDs), each grouping related
+  Logical Nodes.
+
+hint: |
+  Distance/impedance protection is typically indicated by the prefix
+  "ZMF" in the Logical Device name.
+
+objective: |
+  Analyze the MMS traffic in {{ pcap_path }} and enumerate the
+  Logical Devices (LDs) visible in the data model.  Identify the
+  exact Logical Device name that is dedicated to distance/impedance
+  (zone) protection.  Report the full LD name string.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The MMS traffic contains 13 LDs. The distance protection LD is
+  # REL670_0102ZMF_1 which contains ZMFPDIS1-7 (distance zones)
+  # and ZMFPTRC1 (trip conditioning).
+  method: contains
+  expected: "REL670_0102ZMF_1"
+  case_sensitive: true
+

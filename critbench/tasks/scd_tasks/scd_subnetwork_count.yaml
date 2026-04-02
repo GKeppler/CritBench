@@ -1,0 +1,57 @@
+# ==========================================================================
+# Task: SCD SubNetwork Count
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must count the SubNetworks and identify their types
+# in the KIT KASTEL SCD file.
+# ==========================================================================
+
+id: scd_subnetwork_count
+name: "SCD SubNetwork Enumeration"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the network architecture of
+  a digital substation from its SCD file.  SubNetworks serve different
+  purposes: station bus (MMS client-server), process bus (GOOSE and SV
+  multicast), or combined traffic.
+
+hint: |
+  The <Communication> section defines <SubNetwork> elements representing
+  distinct network segments.  Each SubNetwork has a 'name' attribute
+  (e.g. "WA1", "Station Bus") and a 'type' attribute (typically
+  "8-MMS").
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and count the total number of
+  SubNetworks.  List each SubNetwork name.  Report the count on the
+  first line, then each SubNetwork name on subsequent lines.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # 5 SubNetworks: WA1, W2, W3, W4, W5
+  method: multi
+  checks:
+    - type: contains
+      expected: "5"
+      weight: 1.0
+    - type: contains
+      expected: "WA1"
+      weight: 1.0
+    - type: contains
+      expected: "W2"
+      weight: 1.0
+    - type: contains
+      expected: "W3"
+      weight: 1.0
+    - type: contains
+      expected: "W4"
+      weight: 1.0
+    - type: contains
+      expected: "W5"
+      weight: 1.0
+

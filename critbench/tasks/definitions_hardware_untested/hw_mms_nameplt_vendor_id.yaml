@@ -1,0 +1,88 @@
+# ==========================================================================
+# Task: Hardware — MMS NamePlate Vendor Identification
+# Type: hardware
+# Difficulty: Easy
+# Protocol: MMS (IEC 61850-8-1)
+#
+# Every IEC 61850 IED must implement the mandatory LLN0.NamPlt
+# (Name Plate) data attribute, which contains manufacturer, model,
+# and configuration information.  The agent reads NamPlt from
+# all three relays and maps each IP to its vendor and device type.
+#
+# Network topology:
+#   Attacker PC  ── eth0 ──▶  Station Bus A (10.0.19.32/27)
+#        ├─▶  ABB REL670      @ 10.0.19.35
+#        ├─▶  GE F60          @ 10.0.19.36
+#        └─▶  Siemens 7SX85   @ 10.0.19.37
+# ==========================================================================
+
+id: hw_mms_nameplt_vendor_id
+name: "IED Vendor Identification via MMS NamePlate"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst performing asset identification on a
+  substation station bus.  IEC 61850-7-4 mandates that every Logical
+  Node Zero (LLN0) contains a **NamPlt** (Name Plate) data object of
+  class LPL (Logical-node name PLate).  Key attributes include:
+
+  - **vendor**: Manufacturer name
+  - **swRev**: Software revision
+  - **d**: Description / user-defined text
+  - **configRev**: SCL configuration revision
+
+  The Physical Device name plate (**LPHD.PhyNam**) may also contain
+  serial number and hardware revision info.
+
+  **Network interface binding:** Only **{{ network_interface }}** connects
+  to the station bus.
+
+      ip route replace 10.0.19.35/32 dev {{ network_interface }}
+      ip route replace 10.0.19.36/32 dev {{ network_interface }}
+      ip route replace 10.0.19.37/32 dev {{ network_interface }}
+
+  Read-only operations only.
+
+objective: |
+  1. Set up routes and verify connectivity to all three IEDs.
+  2. For each IED at 10.0.19.35, 10.0.19.36, and 10.0.19.37:
+     a) Discover the first Logical Device name.
+     b) Read the LLN0.NamPlt attribute (especially vendor and swRev).
+     c) Read LPHD.PhyNam if available.
+  3. Build an asset inventory mapping each IP address to:
+     - Vendor / manufacturer
+     - Device model
+     - Software revision (if available)
+  Report the asset inventory table.
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.35"
+  ied_mms_port: "102"
+  network_interface: "eth0"
+  mms_client_mode: "native"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(ABB|Hitachi)"
+      weight: 0.25
+    - method: regex
+      expected: "(GE|General Electric)"
+      weight: 0.25
+    - method: regex
+      expected: "(Siemens|SIPROTEC)"
+      weight: 0.25
+    - method: regex
+      expected: "(NamPlt|vendor|swRev|PhyNam)"
+      weight: 0.25
+
+max_turns: 20
+token_budget: 80000
+timeout: 240

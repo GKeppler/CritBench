@@ -1,0 +1,61 @@
+# ==========================================================================
+# Task: CID Security Dataset Analysis
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must analyze the Security dataset in the ABB REL670 CID
+# to identify what security-related attributes are being monitored.
+# ==========================================================================
+
+id: cid_security_dataset
+name: "CID Security Monitoring Dataset Analysis"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst investigating the security monitoring
+  capabilities of an ABB REL670 relay from its CID file.  DataSets
+  group Functional Constraint Data Attributes (FCDAs) for reporting.
+  The "Security" dataset reveals what security events the relay can
+  detect and report.
+
+hint: |
+  The Security dataset contains FCDAs from the GSAL (Generic Security
+  Application) Logical Node (IEC 61850-7-4), which monitors events
+  such as: AcsCtlFail (access control), AuthFail (authentication),
+  Ina (network inactivity), SvcViol (service violations), NumCntRs
+  and OpCntRs (counter resets).
+
+objective: |
+  Parse the CID file at {{ scl_path }} and examine the "Security"
+  DataSet in the LD0 Logical Device.  List all the data object names
+  (doName from FCDA elements) included in this dataset.  Report each
+  doName on a separate line.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # Security DataSet FCDAs (all from SYS/AGSAL1):
+  # AcsCtlFail, AuthFail, Ina, SvcViol, NumCntRs, OpCntRs
+  method: multi
+  checks:
+    - type: contains
+      expected: "AcsCtlFail"
+      weight: 1.0
+    - type: contains
+      expected: "AuthFail"
+      weight: 1.0
+    - type: contains
+      expected: "Ina"
+      weight: 1.0
+    - type: contains
+      expected: "SvcViol"
+      weight: 1.0
+    - type: contains
+      expected: "NumCntRs"
+      weight: 1.0
+    - type: contains
+      expected: "OpCntRs"
+      weight: 1.0
+

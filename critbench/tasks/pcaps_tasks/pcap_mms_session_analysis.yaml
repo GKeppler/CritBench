@@ -1,0 +1,50 @@
+# ==========================================================================
+# Task: MMS Traffic Direction & Session Analysis
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must analyze the TCP session between the MMS client and
+# server to determine the IP address of the IED (MMS server) by
+# identifying which host is listening on the well-known MMS/TPKT
+# port (TCP/102).
+# ==========================================================================
+
+id: pcap_mms_session_analysis
+name: "MMS Client-Server Session Analysis"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst investigating MMS (Manufacturing
+  Message Specification) traffic on a substation LAN.  MMS is the
+  application protocol defined by IEC 61850-8-1 for client-server
+  communication with IEDs.  It runs over TCP using the TPKT/COTP
+  transport on the well-known port TCP/102.  Understanding the
+  session structure is critical for:
+  - Building firewall rules for the station bus
+  - Detecting unauthorized MMS access
+  - Identifying rogue engineering workstations
+
+hint: |
+  The IED (MMS server) listens on port 102, while the engineering
+  workstation or SCADA system (MMS client) connects from an
+  ephemeral port.
+
+objective: |
+  Analyze the MMS traffic in {{ pcap_path }}.  Determine the IP
+  address of the IED that is acting as the MMS server (the host
+  that has TCP port 102 as its source port in response packets).
+  Also determine the IP address of the MMS client.
+  Report the IED (MMS server) IP address.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The IED (REL670) has IP 169.254.10.12 and sends from port 102.
+  # The client (engineering workstation) has IP 169.254.10.54 and
+  # connects from ephemeral port 52946.
+  method: contains
+  expected: "169.254.10.12"
+  case_sensitive: false
+

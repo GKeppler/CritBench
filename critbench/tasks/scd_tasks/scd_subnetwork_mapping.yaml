@@ -1,0 +1,41 @@
+# ==========================================================================
+# Task: SCD SubNetwork IED Mapping
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must determine which SubNetwork carries the REL670's GOOSE
+# traffic by examining the Communication section of the SCD.
+# ==========================================================================
+
+id: scd_subnetwork_mapping
+name: "SCD SubNetwork GOOSE Mapping"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping network segmentation in a
+  digital substation.  GOOSE multicast traffic is confined to the
+  SubNetwork where the publishing IED's Access Point is connected.
+
+hint: |
+  In the <Communication> section, each SubNetwork contains <ConnectedAP>
+  elements.  The presence of GSE address parameters (MAC-Address, APPID,
+  VLAN-ID) on a ConnectedAP indicates the IED publishes GOOSE on that
+  SubNetwork.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and determine which SubNetwork
+  carries the REL670_0102 IED's GOOSE traffic.  Look for the
+  SubNetwork where REL670_0102 has GOOSE addressing parameters
+  (MAC-Address and APPID).  Report the SubNetwork name.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # REL670_0102/S1 on SubNetwork "WA1" has MAC=01-0C-CD-01-01-02,
+  # APPID=0001, VLAN=003
+  method: contains
+  expected: "WA1"
+  case_sensitive: true
+

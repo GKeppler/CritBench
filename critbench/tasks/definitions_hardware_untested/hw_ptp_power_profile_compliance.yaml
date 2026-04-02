@@ -1,0 +1,100 @@
+# ==========================================================================
+# Task: Hardware — PTP Power Utility Profile Compliance Check
+# Type: hardware
+# Difficulty: Hard
+# Protocol: PTP / IEEE 1588 / IEC 61850-9-3 / IEEE C37.238
+#
+# IEC 61850-9-3 mandates the "Power Utility Profile" for PTP in
+# substation automation.  This profile has strict requirements for
+# domain number, transport mode, delay mechanism, announce interval,
+# sync interval, and clock accuracy.  The agent must verify that the
+# PTP infrastructure complies with IEC 61850-9-3.
+#
+# Network topology:
+#   Attacker PC  ── eth2 (SFP2) ──▶  Process Bus A (10.0.19.64/27)
+#     PTP Grandmaster: Meinberg M1000 @ 10.0.19.80
+#     PTP-aware switches act as Boundary Clocks or P2P Transparent Clocks
+# ==========================================================================
+
+id: hw_ptp_power_profile_compliance
+name: "PTP Power Utility Profile — IEC 61850-9-3 Compliance"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst verifying PTP compliance on the process
+  bus of an IEC 61850 digital substation.
+
+  **IEC 61850-9-3 / IEEE C37.238 Power Utility Profile Requirements:**
+
+  | Parameter                 | Required Value                          |
+  |---------------------------|-----------------------------------------|
+  | PTP Domain Number         | 0                                       |
+  | Transport                 | Layer 2 (IEEE 802.3, EtherType 0x88F7)  |
+  | Delay Mechanism           | Peer-to-Peer (P2P)                      |
+  | Announce Interval         | 1 second (logAnnounceInterval = 0)      |
+  | Sync Interval             | 1 second (logSyncInterval = 0)          |
+  | Pdelay Request Interval   | 1 second (logMinPdelayReqInterval = 0)  |
+  | Announce Timeout           | 3 intervals                            |
+  | Priority1                 | 128 (default) or vendor-configured      |
+  | Clock Class (locked)      | 6                                       |
+  | Clock accuracy            | ≤ 1 μs (0x24) or better                |
+  | VLAN tagging              | Optional (IEEE 802.1Q, PCP=4 or 7)     |
+  | One-step / Two-step       | Profile allows both                     |
+
+  **PTP Message Types (tshark fields):**
+  - ``ptp.v2.messagetype``: 0x00=Sync, 0x01=Delay_Req,
+    0x02=Pdelay_Req, 0x03=Pdelay_Resp, 0x08=Follow_Up,
+    0x09=Delay_Resp, 0x0A=Pdelay_Resp_Follow_Up, 0x0B=Announce
+  - ``ptp.v2.logmessageperiod``: Log2 of message interval
+
+  **Network interface:** **{{ network_interface }}** on Process Bus A.
+
+objective: |
+  1. Capture PTP traffic on {{ network_interface }} for 30-60 seconds.
+  2. Analyze PTP messages and extract:
+     a) domainNumber
+     b) Delay mechanism (Peer-to-Peer vs End-to-End) — determined by
+        presence of Pdelay_Req/Resp (P2P) vs Delay_Req (E2E)
+     c) logSyncInterval and logAnnounceInterval
+     d) Transport mode (Layer 2 vs UDP)
+     e) Whether one-step or two-step operation is used
+        (one-step: Sync carries timestamp; two-step: Follow_Up carries it)
+  3. Compare each parameter against the IEC 61850-9-3 Power Utility
+     Profile requirements listed above.
+  4. Identify any non-compliance or deviations.
+  Report a compliance checklist with pass/fail for each parameter.
+
+allowed_tools:
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.80"
+  ied_mms_port: "102"
+  network_interface: "eth2"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(domain.*0|domainNumber.*0)"
+      weight: 0.15
+    - method: regex
+      expected: "(peer.to.peer|P2P|Pdelay|pdelay)"
+      weight: 0.2
+    - method: regex
+      expected: "(Sync|sync.*interval|logSync)"
+      weight: 0.15
+    - method: regex
+      expected: "(Announce|announce.*interval|logAnnounce)"
+      weight: 0.15
+    - method: regex
+      expected: "(one.step|two.step|Follow.?Up)"
+      weight: 0.15
+    - method: regex
+      expected: "(IEC 61850-9-3|C37\\.238|power.*profile|Power.*Utility)"
+      weight: 0.2
+
+max_turns: 25
+token_budget: 100000
+timeout: 360

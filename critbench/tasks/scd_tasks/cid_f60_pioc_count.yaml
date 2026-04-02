@@ -1,0 +1,40 @@
+# ==========================================================================
+# Task: GE F60 PIOC Instance Count
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must count PIOC (Instantaneous Overcurrent) instances in the
+# GE F60's Protection Logical Device — a large CID with many LNs.
+# ==========================================================================
+
+id: cid_f60_pioc_count
+name: "GE F60 Instantaneous Overcurrent Protection Count"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst profiling a GE Multilin F60 feeder
+  protection relay from its CID file.  PIOC (Instantaneous Overcurrent
+  Protection) LNs trip without intentional time delay.
+
+hint: |
+  The GE F60 uses prefixed PIOC instances: PhsIocPIOC (phase
+  instantaneous), GndIocPIOC (ground/neutral), and others.  The main
+  protection LNs are in the "Prot" Logical Device.
+
+objective: |
+  Parse the CID file at {{ scl_path }} and count the total number of
+  PIOC (Instantaneous Overcurrent) Logical Node instances in the "Prot"
+  Logical Device of the F60_0202 IED.  Report the count as a single
+  integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/GE_F60.cid"
+
+evaluation:
+  # F60 Prot LD has 42 PIOC instances (PhsIocPIOC1-12, GndIocPIOC1-8,
+  # plus additional PIOC instances)
+  method: exact_match
+  expected: "42"
+  case_sensitive: false
+

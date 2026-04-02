@@ -1,0 +1,42 @@
+# ==========================================================================
+# Task: SV Merging Unit Vendor Identification via OUI
+# Type: pcap_analysis
+# Difficulty: Easy
+#
+# The agent must map source MAC addresses of SV publishers to their
+# Organizationally Unique Identifiers (OUI) to determine the
+# equipment vendor for each Merging Unit.
+# ==========================================================================
+
+id: pcap_sv_vendor_oui
+name: "SV Merging Unit Vendor Identification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst performing asset inventory on an
+  IEC 61850 digital substation Process Bus.  Merging Units (MUs)
+  publish Sampled Values as Ethernet multicast frames.  The source
+  MAC address of each frame contains an Organizationally Unique
+  Identifier (OUI) in the first three octets that can reveal the
+  equipment manufacturer.  This is a standard technique for passive
+  OT asset discovery.
+
+objective: |
+  Analyze the SV traffic in {{ pcap_path }}.  There are three Merging
+  Units publishing SV streams.  Identify the source MAC address and
+  equipment vendor/manufacturer for the device with svID
+  "MU320_MU0101".  Report the source MAC address in colon-separated
+  lowercase hex notation.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # MU320_MU0101 source MAC is f8:02:78:10:62:a5
+  # OUI f8:02:78 is registered to ABB (Hitachi Energy).
+  # The MU320 is an ABB/Hitachi Energy standalone Merging Unit.
+  method: contains
+  expected: "f8:02:78:10:62:a5"
+  case_sensitive: false
+

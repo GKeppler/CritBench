@@ -1,0 +1,47 @@
+# ==========================================================================
+# Task: CID Unbuffered Report Control Block Identification
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must distinguish between buffered and unbuffered Report
+# Control Blocks (RCBs) in the ABB REL670 CID file.
+# ==========================================================================
+
+id: cid_unbuffered_rcb
+name: "CID Unbuffered Report Control Block Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing the reporting configuration
+  of an ABB REL670 relay from its CID file.  IEC 61850 defines two
+  types of Report Control Blocks: Buffered (BRCB) and Unbuffered
+  (URCB).  Identifying unbuffered RCBs reveals which data flows are
+  NOT guaranteed for delivery — a potential gap in monitoring.
+
+hint: |
+  In SCL, <ReportControl> elements have a 'buffered' attribute.
+  - Buffered RCB: buffered="true" — can retransmit lost reports.
+  - Unbuffered RCB: buffered="false" or absent — no retransmission.
+  Naming convention: "brcb" prefix for buffered, "urcb" for unbuffered.
+
+objective: |
+  Parse the CID file at {{ scl_path }} and find the Report Control
+  Block that is unbuffered (buffered attribute is NOT "true" or is
+  absent).  Report the RCB name and its associated datSet, separated
+  by a comma.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # urcbMeasFlt is unbuffered (buffered=None), datSet=MeasFlt
+  method: multi
+  checks:
+    - type: contains
+      expected: "urcbMeasFlt"
+      weight: 2.0
+    - type: contains
+      expected: "MeasFlt"
+      weight: 1.0
+

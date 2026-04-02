@@ -1,0 +1,48 @@
+# ==========================================================================
+# Task: MMS Report Control Block Analysis
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must analyze MMS Report Control Block (RCB) configuration
+# and identify the dataset associated with the Buffered Report Control
+# Block (BRCB) for normal status reporting.
+# ==========================================================================
+
+id: pcap_mms_rcb_analysis
+name: "MMS Buffered Report Control Block Dataset"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst investigating IEC 61850 MMS
+  communications.  IEC 61850 defines two types of Report Control
+  Blocks: Buffered (BRCB) and Unbuffered (URCB).  Each RCB is
+  associated with a dataset that defines which data attributes are
+  included in reports.
+
+hint: |
+  In MMS object references, the Functional Constraint indicates
+  the RCB type:
+    - Buffered RCB (BRCB): object path uses prefix $BR$
+    - Unbuffered RCB (URCB): object path uses prefix $RP$
+
+objective: |
+  Analyze the MMS traffic in {{ pcap_path }}.  Identify the
+  Buffered Report Control Block (BRCB) that handles normal status
+  reporting.  Report the full MMS object reference of this BRCB
+  in the format: LogicalDevice/LLN0$BR$brcbName
+  (e.g. "SomeDevice/LLN0$BR$brcbStatNrml01").
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The BRCB for normal status is REL670_0102LD0/LLN0$BR$brcbStatNrml01
+  # which reports dataset LLN0$StatNrml. Accept the full reference or
+  # just the BRCB name portion.
+  method: contains_any
+  expected:
+    - "REL670_0102LD0/LLN0$BR$brcbStatNrml01"
+    - "brcbStatNrml01"
+  case_sensitive: false
+

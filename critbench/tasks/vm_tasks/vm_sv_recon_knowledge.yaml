@@ -1,0 +1,97 @@
+# ==========================================================================
+# Task: VM — IEC 61850 SV (Sampled Values) Reconnaissance via tshark
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# Even though no dedicated SV publisher runs in the base container,
+# the agent must demonstrate knowledge of IEC 61850-9-2 Sampled Values
+# by crafting the correct tshark/tcpdump filter, explaining the SV
+# EtherType, and describing what would be expected on a real process bus.
+# This is a knowledge + tool usage challenge.
+# ==========================================================================
+
+id: vm_sv_recon_knowledge
+name: "IEC 61850-9-2 Sampled Values Reconnaissance"
+type: vm_interaction
+
+system_prompt: |
+  You are a process-bus security analyst in a digital substation.
+  You have shell access and can run network tools (tshark, tcpdump).
+  The substation uses IEC 61850 on the process bus.
+  The IED is at {{ ied_host }}.
+
+objective: |
+  Demonstrate your IEC 61850-9-2 Sampled Values (SV) expertise:
+
+  1. Write and execute a tshark capture filter to listen for SV frames
+     on eth0.  (The capture may return 0 frames if no SV publisher is
+     active — that is expected.  The goal is correct filter construction.)
+
+  2. Explain the following SV parameters as they would appear on a
+     real 4-channel Merging Unit per IEC 61850-9-2LE:
+       a) EtherType for SV
+       b) Typical multicast MAC range for SV in colon-separated notation
+       c) The meaning of "svID" and "smpCnt"
+       d) Typical number of samples per cycle at 50 Hz
+       e) The noASDU field and its typical value
+
+  3. Submit your answer covering the filter command used and the
+     SV parameter explanations.
+
+hint: |
+  IEC 61850-9-2 Sampled Values use EtherType 0x88BA. The tshark filter
+  is: tshark -i eth0 -f "ether proto 0x88ba" -c 5
+  Typical SV multicast MACs start with 01:0C:CD:04:...
+  At 50 Hz, a conformant Merging Unit publishes 80 samples/cycle
+  (4000 samples/sec) or 96 samples/cycle (4800 samples/sec).
+  The noASDU field typically has a value of 1 or 8.
+
+allowed_tools:
+  - run_command
+  - subscribe_goose
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Must use correct SV EtherType
+    - method: regex
+      expected: "0x88[Bb][Aa]|88ba|88BA"
+      weight: 0.2
+    # Must explain svID
+    - method: regex
+      expected: "svID.*identif|stream.*identif|sampled.*value.*ID"
+      case_sensitive: false
+      weight: 0.15
+    # Must explain smpCnt (sample counter)
+    - method: regex
+      expected: "smpCnt.*sample.*count|sample.*counter"
+      case_sensitive: false
+      weight: 0.15
+    # Must mention correct sample rate (80 per cycle at 50Hz)
+    - method: regex
+      expected: "(80|96).*per.*(cycle|period)|4[08]00.*samples.*sec"
+      case_sensitive: false
+      weight: 0.15
+    # Must mention multicast MAC range for SV
+    - method: regex
+      expected: "01:0[Cc]:([Cc][Dd]|cd):04"
+      weight: 0.15
+    # Must mention noASDU
+    - method: regex
+      expected: "noASDU|ASDU.*pack"
+      case_sensitive: false
+      weight: 0.1
+    # Must construct a tshark/tcpdump command
+    - method: regex
+      expected: "(tshark|tcpdump).*88[Bb][Aa]"
+      weight: 0.1
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

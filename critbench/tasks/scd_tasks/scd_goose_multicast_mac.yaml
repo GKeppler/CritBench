@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: SCD GOOSE Multicast MAC Extraction
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must extract the GOOSE multicast MAC addresses from the
+# Communication section's GSE address parameters.
+# ==========================================================================
+
+id: scd_goose_multicast_mac
+name: "SCD GOOSE Multicast MAC Address Extraction"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst configuring network switches for a
+  digital substation's process bus.  GOOSE multicast traffic uses
+  reserved IEEE multicast MAC addresses in the range 01-0C-CD-01-xx-xx.
+
+hint: |
+  GOOSE MAC addresses are in the Communication section under
+  ConnectedAP → GSE → Address → P elements:
+    <ConnectedAP iedName="..." apName="...">
+      <GSE ldInst="..." cbName="...">
+        <Address>
+          <P type="MAC-Address">01-0C-CD-01-xx-xx</P>
+        </Address>
+      </GSE>
+    </ConnectedAP>
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and extract the GOOSE multicast
+  MAC address used by the REL670_0102 IED.  Look in the Communication
+  section's ConnectedAP for REL670_0102 on the SubNetwork where it
+  publishes GOOSE.  Report the MAC address in the format
+  XX-XX-XX-XX-XX-XX.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # REL670_0102/S1 on WA1: MAC=01-0C-CD-01-01-02
+  method: contains
+  expected: "01-0C-CD-01-01-02"
+  case_sensitive: false
+

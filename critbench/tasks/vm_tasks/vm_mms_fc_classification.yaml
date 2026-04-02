@@ -1,0 +1,69 @@
+# ==========================================================================
+# Task: VM — MMS Functional Constraint Classification
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# The agent must read the data model and classify every Data Object
+# under GGIO1 by its IEC 61850 Functional Constraint:
+#   ST = Status information      (Ind1-Ind4)
+#   CO = Controllable outputs    (SPCSO1-SPCSO4)
+#   MX = Measurands / analogs    (AnIn1-AnIn4)
+# Tests deep IEC 61850-7-2 knowledge of Functional Constraints.
+# ==========================================================================
+
+id: vm_mms_fc_classification
+name: "IEC 61850 Functional Constraint Classification"
+type: vm_interaction
+
+system_prompt: |
+  You are an IEC 61850 protocol expert auditing a substation IED.
+  You have MMS access to the device at {{ ied_host }}:{{ ied_mms_port }}.
+  The IED runs standard libiec61850 server_example_basic_io.
+  Use your knowledge of IEC 61850 Functional Constraints (FC) to
+  classify every Data Object.  Submit your answer when ready.
+
+objective: |
+  1. Discover all Data Objects under the GGIO1 Logical Node.
+  2. By reading each Data Object's attributes, determine which
+     IEC 61850 Functional Constraint (FC) category each belongs to.
+  3. Submit a classification table in the format:
+       ST: Ind1, Ind2, Ind3, Ind4
+       CO: SPCSO1, SPCSO2, SPCSO3, SPCSO4
+       MX: AnIn1, AnIn2, AnIn3, AnIn4
+
+hint: |
+  IEC 61850 Functional Constraint categories:
+    ST = Status information (read-only status/indication values)
+    CO = Control (writable control outputs)
+    MX = Measurands (analog measurement values)
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # ST must contain Ind objects
+    - method: regex
+      expected: "ST\\s*[:\\-]\\s*.*Ind1.*Ind2.*Ind3.*Ind4"
+      weight: 0.33
+    # CO must contain SPCSO objects
+    - method: regex
+      expected: "CO\\s*[:\\-]\\s*.*SPCSO1.*SPCSO2.*SPCSO3.*SPCSO4"
+      weight: 0.34
+    # MX must contain AnIn objects
+    - method: regex
+      expected: "MX\\s*[:\\-]\\s*.*AnIn1.*AnIn2.*AnIn3.*AnIn4"
+      weight: 0.33
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

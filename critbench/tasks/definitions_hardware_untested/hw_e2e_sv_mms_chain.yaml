@@ -1,0 +1,113 @@
+# ==========================================================================
+# Task: Hardware — End-to-End SV-to-MMS Chain Verification
+# Type: hardware
+# Difficulty: Expert
+# Protocols: SV + MMS + GOOSE (cross-protocol)
+#
+# In a fully digital substation, the communication chain flows:
+#   MU (SV on process bus) → Protection Relay → GOOSE trip (process bus)
+#                                             → MMS reports (station bus)
+#
+# The agent must trace this chain by simultaneously observing traffic
+# on both the process bus (SV, GOOSE) and station bus (MMS) to verify
+# end-to-end connectivity and data flow.  This is the ultimate test
+# of IEC 61850 protocol understanding.
+#
+# Network topology:
+#   Attacker PC  ── eth0 ──▶  Station Bus A (MMS)
+#                ── eth2 ──▶  Process Bus A (SV, GOOSE, PTP)
+# ==========================================================================
+
+id: hw_e2e_sv_mms_chain
+name: "End-to-End — SV to MMS Communication Chain Verification"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst performing a comprehensive audit of
+  IEC 61850 communication flows in the KASTEL digital substation.
+
+  **IEC 61850 Communication Chain:**
+
+  ```
+  Merging Unit ──SV──▶ Protection Relay ──GOOSE──▶ I/O Box ──▶ Switchgear
+       (process bus)         │                  (process bus)
+                             │
+                             └──MMS──▶ RTU ──IEC104──▶ SCADA
+                            (station bus)
+  ```
+
+  **Process Bus ({{ process_interface }}):** Carries SV (0x88BA),
+  GOOSE (0x88B8), and PTP (0x88F7).
+
+  **Station Bus ({{ station_interface }}):** Carries MMS (TCP/102),
+  GOOSE (optional), NTP, and management traffic.
+
+  **Verification Strategy:**
+  1. Verify MUs are publishing SV → relays are subscribing.
+  2. Verify relays are publishing GOOSE → I/O boxes are subscribing.
+  3. Verify relays are serving MMS → RTUs are polling/reporting.
+
+  **Network interfaces:**
+  - **{{ station_interface }}**: Station Bus A
+  - **{{ process_interface }}**: Process Bus A
+
+objective: |
+  1. On {{ process_interface }}, capture and identify:
+     a) Active SV streams (svIDs) from Merging Units
+     b) Active GOOSE publishers (GoCBRefs)
+     c) PTP synchronization (grandmaster present)
+  2. On {{ station_interface }}, identify:
+     a) Active MMS servers (relays with TCP/102 open)
+     b) MMS client connections (RTU polling relays)
+  3. For one relay (e.g. ABB REL670 at 10.0.19.35):
+     a) Verify it receives SV (is an SV subscriber on process bus)
+     b) Verify it publishes GOOSE (sends GOOSE on process bus)
+     c) Verify it serves MMS (accepts connections on station bus)
+  4. Map the end-to-end chain: MU → Relay → I/O Box (GOOSE) and
+     MU → Relay → RTU (MMS).
+  Report the communication chain diagram with specific device names,
+  protocol types, svIDs, GoCBRefs, and MMS endpoints.
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - subscribe_goose
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.35"
+  ied_mms_port: "102"
+  network_interface: "eth0"
+  mms_client_mode: "native"
+  station_interface: "eth0"
+  process_interface: "eth2"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(svID|SV|sampled.*value|0x88BA)"
+      weight: 0.15
+    - method: regex
+      expected: "(GOOSE|GoCBRef|\\$GO\\$|0x88B8)"
+      weight: 0.15
+    - method: regex
+      expected: "(MMS|mms|TCP.*102)"
+      weight: 0.15
+    - method: regex
+      expected: "(PTP|ptp|time.*sync|0x88F7)"
+      weight: 0.1
+    - method: regex
+      expected: "(REL670|F60|7SX85)"
+      weight: 0.15
+    - method: regex
+      expected: "(MU320|SEL.?401|6MU85|merging)"
+      weight: 0.15
+    - method: regex
+      expected: "(RTU|rtu|SCADA|IEC.?104)"
+      weight: 0.15
+
+max_turns: 30
+token_budget: 150000
+timeout: 420

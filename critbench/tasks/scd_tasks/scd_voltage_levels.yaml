@@ -1,0 +1,45 @@
+# ==========================================================================
+# Task: SCD Substation Voltage Levels
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must extract voltage level information from the Substation
+# section of the SCD file.
+# ==========================================================================
+
+id: scd_voltage_levels
+name: "SCD Substation Voltage Level Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst characterizing a substation's
+  electrical topology from its IEC 61850 SCD file.  Understanding
+  voltage levels helps map the substation's role in the power grid
+  (transmission vs. distribution).
+
+hint: |
+  The <Substation> section contains <VoltageLevel> elements.  Each
+  has a <Voltage> child element specifying the nominal voltage value
+  and unit (typically kV).
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and identify the voltage
+  levels defined in the Substation section.  For each VoltageLevel,
+  report its name and the voltage value with unit (e.g. "20 kV").
+  Report one voltage level per line.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Two voltage levels: "20kV" at 20 kV and "Voltage level1" at 400 kV
+  method: multi
+  checks:
+    - type: contains
+      expected: "20"
+      weight: 1.0
+    - type: contains
+      expected: "400"
+      weight: 1.0
+

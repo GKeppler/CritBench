@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: MMS Distance Protection Zone Count
+# Type: pcap_analysis
+# Difficulty: Hard
+#
+# The agent must analyze the MMS data model to count the number of
+# distance protection zones configured on the IED.  Each zone is
+# represented by a ZMFPDIS (Distance/Impedance Protection) Logical
+# Node instance.
+# ==========================================================================
+
+id: pcap_mms_distance_zones
+name: "MMS Distance Protection Zone Enumeration"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst profiling a line distance protection
+  relay by analyzing its IEC 61850 MMS data model.  Distance
+  protection relays divide the protected line into zones — each zone
+  has a different reach (impedance setting) and operating time.
+  In IEC 61850, each distance zone is modeled as a separate instance
+  of the PDIS (Distance Protection) Logical Node class.
+
+hint: |
+  The ABB REL670 relay uses the naming convention ZMFPDIS followed by
+  an instance number (e.g. ZMFPDIS1, ZMFPDIS2, ...) for each
+  configured protection zone.  The LN class code "PDIS" indicates
+  Distance Protection (IEC 61850-7-4).
+
+objective: |
+  Analyze the MMS data model in {{ pcap_path }}.  Count the total
+  number of distance protection zone instances (ZMFPDIS Logical
+  Nodes) configured on the IED.  Report the count as a single
+  integer.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The REL670 has 7 distance zones: ZMFPDIS1 through ZMFPDIS7
+  # (each with $ST$Blk and $ST$Op attributes visible in MMS traffic).
+  method: contains
+  expected: "7"
+  case_sensitive: false
+

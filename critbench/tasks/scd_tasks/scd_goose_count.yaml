@@ -1,0 +1,43 @@
+# ==========================================================================
+# Task: SCD GOOSE Control Block Count
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must count the total number of GOOSE Control Blocks
+# (GSEControl elements) across all IEDs in the SCD file.
+# ==========================================================================
+
+id: scd_goose_count
+name: "SCD Total GOOSE Control Block Count"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst inventorying all GOOSE publishers in
+  a digital substation.  Multiple IEDs may each publish one or more
+  GOOSE streams.  Knowing the total count is essential for process bus
+  traffic planning and anomaly detection baseline creation.
+
+hint: |
+  Each GOOSE Control Block (GoCB) is defined by a <GSEControl> element
+  within an IED's Logical Node Zero (LLN0).
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and count the total number of
+  <GSEControl> elements across all IEDs.  Report the count as a
+  single integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # 6 GSEControl blocks total:
+  # E03A102_: Control_DataSet
+  # E03A101_: Control_DataSet, Control_DataSet (DS_GENERAL_TRIP)
+  # E03A103_: Control_DataSet
+  # REL670_0102: REL670_TRIP_G
+  # F60_0202: F60_TRIP_G
+  method: exact_match
+  expected: "6"
+  case_sensitive: false
+

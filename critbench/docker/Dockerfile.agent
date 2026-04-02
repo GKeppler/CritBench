@@ -1,0 +1,70 @@
+# ==========================================================================
+# Dockerfile.agent  —  CritBench agent container
+#
+# Runs the OT agent loop with all CritLayer tools available.
+# Connects to the IED server container over the Docker bridge network.
+# ==========================================================================
+FROM python:3.11-slim-bookworm
+
+# System packages needed by tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        tshark \
+        tcpdump \
+        iputils-ping \
+        net-tools \
+        curl \
+        jq \
+        # Build deps for libiec61850
+        build-essential \
+        cmake \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# libiec61850  —  IEC 61850 MMS/GOOSE library (needed by VM-interaction tasks)
+# ---------------------------------------------------------------------------
+RUN git clone --depth 1 https://github.com/mz-automation/libiec61850.git /tmp/libiec61850 \
+    && cd /tmp/libiec61850 \
+    && mkdir build && cd build \
+    && cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local \
+    && make -j"$(nproc)" \
+    && make install \
+    && ldconfig \
+    && rm -rf /tmp/libiec61850
+
+# ---------------------------------------------------------------------------
+# Custom non-interactive MMS client (discover / read / write via CLI args)
+# ---------------------------------------------------------------------------
+COPY docker/mms_client.c /tmp/mms_client.c
+RUN mkdir -p /opt/libiec61850/bin \
+    && gcc -o /opt/libiec61850/bin/mms_client /tmp/mms_client.c \
+       -I/usr/local/include/libiec61850 \
+       -liec61850 -lpthread \
+    && rm /tmp/mms_client.c
+
+# Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+# ---------------------------------------------------------------------------
+# SELECTIVE COPY — Only agent runtime code goes into the container.
+# The evaluation code, task definitions (with answers), and orchestrator
+# are deliberately EXCLUDED to prevent the agent from reading solutions.
+# ---------------------------------------------------------------------------
+COPY __init__.py /code/__init__.py
+COPY agent_runner/ /code/agent_runner/
+COPY critleayer/ /code/critleayer/
+COPY tasks/__init__.py /code/tasks/__init__.py
+COPY tasks/task_schema.py /code/tasks/task_schema.py
+
+WORKDIR /code
+
+# Create a scratch work directory for agent tool operations
+RUN mkdir -p /work
+
+# Ensure the package is importable
+ENV PYTHONPATH=/code
+ENV CRITBENCH_WORKDIR=/work
+
+# Default entrypoint — overridden by docker-compose env vars
+ENTRYPOINT ["python", "-m", "agent_runner.ot_agent"]

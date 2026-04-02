@@ -1,0 +1,63 @@
+# ==========================================================================
+# Task: VM — IEC 104 Digital Output Toggle
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# The agent must send a Single Command (C_SC_NA_1) to IOA 51 to toggle
+# a digital output from OFF to ON using IEC 104.
+# Tests understanding of IEC 104 command types and control direction.
+# ==========================================================================
+
+id: vm_iec104_single_command
+name: "IEC 104 Single Command — Digital Toggle"
+type: vm_interaction
+
+system_prompt: |
+  You are testing control capabilities on an IEC 60870-5-104 RTU at
+  {{ ied_host }}:{{ ied_iec104_port }}.  Common Address is 1.
+  The RTU has a controllable digital output at IOA 51 that accepts
+  Single Commands.
+
+objective: |
+  1. Perform a General Interrogation to discover available points.
+  2. Read the current state of IOA 21 (single-point status).
+  3. Send a Single Command (C_SC_NA_1) to IOA 51 with value ON (true).
+  4. Verify the command was accepted.
+  5. Report "Single command ON sent to IOA 51".
+
+hint: |
+  In IEC 60870-5-104, the Single Command type is C_SC_NA_1 (type ID 45).
+  Use send_iec104_command with type="C_SC_NA_1", ioa=51, and value=true
+  to assert the output.
+
+allowed_tools:
+  - iec104_interrogation
+  - read_iec104_point
+  - send_iec104_command
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_iec104_port: "2404"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    - method: contains
+      expected: "IOA 51"
+      weight: 0.2
+    - method: regex
+      expected: "(ON|true|1)"
+      case_sensitive: false
+      weight: 0.2
+    - method: state_check
+      state_endpoint: "http://ied-server:8080"
+      state_path: "iec104.1.51.value"
+      expected: true
+      weight: 0.6
+
+max_turns: 20
+token_budget: 80000
+timeout: 300

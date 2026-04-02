@@ -1,0 +1,55 @@
+# ==========================================================================
+# Task: Cross-File GOOSE Configuration Comparison
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must compare the GOOSE configuration of the REL670 and
+# F60 relays across two different SCD files to identify differences.
+# ==========================================================================
+
+id: scd_cross_goose_confrev
+name: "SCD Cross-File GOOSE Configuration Revision Comparison"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst performing a configuration consistency
+  audit across multiple IEC 61850 SCD files.  Different SCD versions
+  may exist for the same substation during different engineering phases.
+
+hint: |
+  The GSEControl 'confRev' (Configuration Revision) attribute is a
+  counter that increments each time the GOOSE dataset or configuration
+  changes.  Mismatched confRev values can cause GOOSE rejection by
+  subscribers.
+
+objective: |
+  Parse both SCD files:
+  1. {{ scl_path_1 }}
+  2. {{ scl_path_2 }}
+
+  For the REL670_0102 IED, compare the GOOSE Control Block
+  "REL670_TRIP_G" between both files.  Report:
+  - The confRev value in file 1
+  - The confRev value in file 2
+  - Whether they match (YES/NO)
+
+
+environment:
+  scl_path_1: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+  scl_path_2: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # Both files: REL670_TRIP_G confRev=100 → they match
+  method: multi
+  checks:
+    - type: contains
+      expected: "100"
+      weight: 2.0
+    - type: contains_any
+      expected:
+        - "YES"
+        - "match"
+        - "same"
+        - "identical"
+      weight: 1.0
+

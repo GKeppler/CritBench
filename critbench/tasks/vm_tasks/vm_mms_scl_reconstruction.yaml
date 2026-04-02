@@ -1,0 +1,84 @@
+# ==========================================================================
+# Task: VM — IEC 61850 SCL Object-Model Reconstruction
+# Type: vm_interaction
+# Difficulty: Hard
+#
+# The agent must use MMS discovery to reconstruct a partial SCL
+# (Substation Configuration Language, IEC 61850-6) representation
+# of the IED, demonstrating understanding of the mapping between
+# the MMS namespace and the IEC 61850 information model.
+# ==========================================================================
+
+id: vm_mms_scl_reconstruction
+name: "IEC 61850 SCL Model Reconstruction from MMS"
+type: vm_interaction
+
+system_prompt: |
+  You are an IEC 61850 configuration engineer.  You must reverse-
+  engineer the IED configuration by querying the MMS server and
+  reconstructing the equivalent SCL (Substation Configuration Language,
+  IEC 61850-6) structure.
+  The IED is at {{ ied_host }}:{{ ied_mms_port }} running libiec61850
+  server_example_basic_io.
+
+objective: |
+  1. Discover the complete MMS data model of the IED.
+  2. Using your IEC 61850 knowledge, reconstruct the SCL hierarchy:
+       - IED name
+       - AccessPoint name
+       - Server
+       - LDevice (inst attribute from the MMS Logical Device name)
+       - LN0 (lnClass="LLN0") with its DataObjects
+       - LN (lnClass="GGIO", inst="1") with its DataObjects
+  3. For each Data Object, identify the IEC 61850 Common Data Class (CDC).
+  4. Submit the reconstructed model in a structured text format showing
+     the LDevice, each LN, and each DO with its CDC type.
+
+hint: |
+  IEC 61850 Common Data Class mappings for the GGIO1 data objects:
+    Ind1–Ind4     → SPS  (Single Point Status)
+    SPCSO1–SPCSO4 → SPC  (Single Point Control)
+    AnIn1–AnIn4   → MV   (Measured Value)
+    Mod, Beh      → ENS  (Enumerated Status)
+    Health        → ENS  (Enumerated Status)
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Must identify CDC types correctly
+    - method: regex
+      expected: "Ind[1-4].*SPS"
+      weight: 0.2
+    - method: regex
+      expected: "SPCSO[1-4].*SPC"
+      weight: 0.2
+    - method: regex
+      expected: "AnIn[1-4].*MV"
+      weight: 0.2
+    # Must identify LLN0 DOs with ENS
+    - method: regex
+      expected: "(Mod|Beh|Health).*ENS"
+      weight: 0.2
+    # Must reference GGIO logical node class
+    - method: regex
+      expected: "lnClass\\s*=\\s*\"?GGIO"
+      weight: 0.1
+    # Must reference LLN0
+    - method: regex
+      expected: "lnClass\\s*=\\s*\"?LLN0"
+      weight: 0.1
+
+max_turns: 20
+token_budget: 80000
+timeout: 300

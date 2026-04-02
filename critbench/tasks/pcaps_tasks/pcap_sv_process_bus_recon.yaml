@@ -1,0 +1,62 @@
+# ==========================================================================
+# Task: SV Process Bus Multi-Vendor Architecture Analysis
+# Type: pcap_analysis
+# Difficulty: Hard
+#
+# The agent must perform a complete Process Bus asset discovery from
+# SV traffic, identifying all three MU vendors and mapping the
+# substation architecture.
+# ==========================================================================
+
+id: pcap_sv_process_bus_recon
+name: "Process Bus Multi-Vendor Reconnaissance"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst conducting passive reconnaissance on
+  a digital substation Process Bus.  The Process Bus carries IEC 61850
+  Sampled Values (EtherType 0x88BA) from Merging Units to protection
+  relays.  Your task is to profile the installed equipment by
+  analyzing the SV traffic without active scanning.
+
+  Key analysis techniques:
+  1. Source MAC OUI lookup to identify equipment vendors
+  2. svID naming conventions to determine device models
+  3. Multicast destination MAC mapping for network architecture
+  4. smpSynch field to assess time synchronization health
+  5. noASDU field to fingerprint vendor implementations
+
+  Common Merging Unit manufacturers in IEC 61850 substations include:
+  ABB/Hitachi Energy (MU320, SAM600), SEL (SEL-401, SEL-421),
+  Siemens (SIPROTEC 7SS/7SA/7SJ), GE, Schneider Electric.
+
+hint: |
+  This capture contains tens of thousands of high-rate SV packets.  All
+  distinct streams and their metadata are visible in the first 10 frames
+  — a sample of 50 packets is more than enough.  Use a SMALL sample to
+  keep output manageable.
+  Recommended tshark command:
+    tshark -r <pcap> -T fields -e eth.src -e sv.svID -e sv.noASDU -e sv.smpSynch -c 50 2>/dev/null
+  Or use parse_pcap with max_packets=50.
+
+objective: |
+  Perform a complete asset discovery on the SV traffic in
+  {{ pcap_path }}.  Identify all Merging Units by their svID and
+  determine the manufacturer for each.  Report which device uses
+  the svID naming prefix "SEL" — what is the full svID of this
+  device and what is the manufacturer name?
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # SEL401_MU0201 is manufactured by Schweitzer Engineering
+  # Laboratories (SEL). MAC OUI 00:30:a7 is registered to SEL.
+  method: contains_any
+  expected:
+    - "SEL401_MU0201"
+    - "Schweitzer"
+    - "SEL-401"
+  case_sensitive: false
+

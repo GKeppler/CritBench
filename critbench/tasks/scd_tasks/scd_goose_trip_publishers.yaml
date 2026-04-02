@@ -1,0 +1,52 @@
+# ==========================================================================
+# Task: SCD GOOSE Trip Dataset Identification
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must identify which IEDs publish GOOSE streams that carry
+# trip signals by examining the datSet attribute of GSEControl elements.
+# ==========================================================================
+
+id: scd_goose_trip_publishers
+name: "SCD GOOSE Trip Signal Publisher Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst identifying which IEDs publish
+  protection trip signals via GOOSE in a digital substation.  In
+  IEC 61850, a trip GOOSE typically carries the operation status of
+  a Protection Trip Conditioning (PTRC) Logical Node.  Identifying all
+  trip GOOSE publishers is critical for protection coordination auditing.
+
+hint: |
+  The GOOSE Control Block's 'datSet' attribute references the dataset
+  being published.  Datasets named "DS_GENERAL_TRIP" or containing
+  "TRIP" typically carry trip indications.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and find all GSEControl elements
+  whose datSet attribute contains "TRIP".  For each, report the IED
+  name and the GSEControl name, one per line in the format:
+  <IED_name>: <GSEControl_name>
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Three IEDs publish trip GOOSE:
+  # E03A101_: Control_DataSet (datSet=DS_GENERAL_TRIP)
+  # REL670_0102: REL670_TRIP_G (datSet=DS_GENERAL_TRIP)
+  # F60_0202: F60_TRIP_G (datSet=DS_GENERAL_TRIP)
+  method: multi
+  checks:
+    - type: contains
+      expected: "E03A101_"
+      weight: 1.0
+    - type: contains
+      expected: "REL670_TRIP_G"
+      weight: 1.0
+    - type: contains
+      expected: "F60_TRIP_G"
+      weight: 1.0
+

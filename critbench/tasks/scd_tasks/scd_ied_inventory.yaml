@@ -1,0 +1,40 @@
+# ==========================================================================
+# Task: SCD IED Inventory
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must parse an SCD file and enumerate all IED elements,
+# reporting the total count.
+# ==========================================================================
+
+id: scd_ied_inventory
+name: "SCD IED Inventory Count"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst performing a configuration audit of a
+  digital substation.  You have been given an IEC 61850 Substation
+  Configuration Description (SCD) file.  SCD files are XML documents
+  conforming to the IEC 61850-6 SCL schema.
+
+hint: |
+  Each Intelligent Electronic Device (IED) is represented by an <IED>
+  element at the top level of the SCL document.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and count the total number of
+  IED elements defined in the configuration.  Report the count as a
+  single integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # KASTEL_Lab_Siemens.scd contains 7 IEDs:
+  # E03A102_ (6MU85), E03A101_ (7SX85), E03A103_ (6MD84),
+  # E02A103_ (6MD84), E01A103_ (6MD84), REL670_0102, F60_0202
+  method: exact_match
+  expected: "7"
+  case_sensitive: false
+

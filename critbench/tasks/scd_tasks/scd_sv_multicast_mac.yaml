@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: SCD SV Multicast MAC on Process Bus
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must extract the SV multicast MAC address from the
+# process bus SubNetwork in the KASTEL_Lab_ABB.scd file.
+# ==========================================================================
+
+id: scd_sv_multicast_mac
+name: "SCD Sampled Values Multicast MAC Extraction"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst configuring port mirroring on process
+  bus switches to capture Sampled Values (SV) traffic.  SV streams use
+  reserved IEEE multicast MAC addresses in the range 01-0C-CD-04-xx-xx
+  (as defined in IEC 61850-9-2).
+
+hint: |
+  SV addressing is in the Communication section under
+  ConnectedAP → SMV → Address → P elements:
+    <ConnectedAP iedName="..." apName="...">
+      <SMV ldInst="..." cbName="...">
+        <Address>
+          <P type="MAC-Address">01-0C-CD-04-xx-xx</P>
+        </Address>
+      </SMV>
+    </ConnectedAP>
+  Note: SV range (01-0C-CD-04-xx-xx) differs from GOOSE (01-0C-CD-01-xx-xx).
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and find the Sampled Values
+  multicast MAC address for the Merging Unit IED on the W4 process
+  bus SubNetwork.  Report the MAC address in XX-XX-XX-XX-XX-XX format.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # RxSV1MU01/URPCAP on W4: MAC=01-0C-CD-04-01-01
+  method: contains
+  expected: "01-0C-CD-04-01-01"
+  case_sensitive: false
+

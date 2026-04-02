@@ -1,0 +1,88 @@
+# ==========================================================================
+# docker-compose.yaml  —  CritBench VM-interaction environment
+#
+# Services:
+#   ied-server  → IEC 61850 MMS / GOOSE + IEC 104 + state API
+#   agent       → CritBench OT agent with CritLayer tools
+#
+# Usage:
+#   docker compose -f docker-compose.yaml up
+#
+# Environment vars to set (or use .env file):
+#   OPENAI_API_KEY      or  OPENROUTER_API_KEY  or  KITOOLBOX_API_KEY
+#   CRITBENCH_MODEL     e.g. gpt-4o, openrouter/anthropic/claude-sonnet-4-20250514
+#   CRITBENCH_TASK      path to task YAML  (inside container: /code/tasks/…)
+#   CRITBENCH_OUTPUT    output directory    (inside container: /output)
+# ==========================================================================
+
+services:
+  # ---- IED Server --------------------------------------------------------
+  ied-server:
+    image: critbench-ied:latest
+    container_name: critbench-ied
+    hostname: ied-server
+    networks:
+      ot-net:
+        ipv4_address: 172.29.0.10
+    ports:
+      - "10102:102"     # MMS   — host access for debugging
+      - "12404:2404"    # IEC104
+      - "18080:8080"    # State API
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # ---- Agent -------------------------------------------------------------
+  agent:
+    image: critbench-agent:latest
+    container_name: critbench-agent
+    hostname: agent
+    networks:
+      - ot-net
+    # NOTE: No depends_on here. The orchestrator (run_experiments.py) manages
+    # IED server lifecycle separately. For VM tasks it starts ied-server first;
+    # for PCAP/hardware tasks it runs just the agent with --no-deps.
+    environment:
+      # LLM provider keys — inject from .env or shell
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - KITOOLBOX_API_KEY=${KITOOLBOX_API_KEY:-}
+      # CritBench configuration
+      - CRITBENCH_MODEL=${CRITBENCH_MODEL:-gpt-4o}
+      - CRITBENCH_TASK=${CRITBENCH_TASK:-/code/tasks/definitions/vm_mms_breaker_flip.yaml}
+      - CRITBENCH_OUTPUT=${CRITBENCH_OUTPUT:-/output}
+      # IED server connection info
+      - IED_HOST=ied-server
+      - IED_MMS_PORT=102
+      - IED_IEC104_PORT=2404
+      - IED_STATE_API=http://ied-server:8080
+    volumes:
+      # Mount output dir to host for result collection
+      # CRITBENCH_OUTPUT_MOUNT can be overridden so --output <dir> works correctly
+      - ${CRITBENCH_OUTPUT_MOUNT:-./output}:/output
+      # Mount PCAP files if needed
+      - ./tasks/pcaps:/code/tasks/pcaps:ro
+      - ./tasks/scd:/code/tasks/scd:ro
+      # NOTE: The agent container image contains ONLY runtime code
+      # (agent_runner/, critleayer/, tasks/task_schema.py).
+      # Evaluation code and task definitions (with expected answers)
+      # are NOT in the image. Evaluation runs host-side after Docker exits.
+    cap_add:
+      - NET_RAW      # needed for scapy / raw sockets
+      - NET_ADMIN     # needed for tcpdump / GOOSE
+    restart: "no"
+
+# --------------------------------------------------------------------------
+# Network
+# --------------------------------------------------------------------------
+networks:
+  ot-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+          gateway: 172.29.0.1

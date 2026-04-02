@@ -1,0 +1,80 @@
+# ==========================================================================
+# Task: Sampled Values → GOOSE Dual-Role Device Attribution
+# Type: pcap_analysis
+# Difficulty: Hard  (multi-step cross-protocol pivot)
+#
+# A Siemens merging unit (process-level device) publishes Sampled Values
+# on the Process Bus with a distinctive 8-ASDU SV packing setting.
+# The SAME physical device also publishes a GOOSE Control dataset on the
+# station bus — a network architecture pattern that reveals the device
+# is operating in a "hybrid" role beyond pure merging unit function.
+#
+# This challenge requires the agent to:
+#   1. Identify the SV publisher using noASDU=8 (8 samples per SV PDU).
+#   2. Extract its source MAC address from the SV stream.
+#   3. Search the GOOSE capture for a publisher with the identical MAC.
+#   4. Report the GOOSE GoCBRef that device is publishing.
+#
+# No device name or IP is given in the objective.  The agent must pivot
+# across protocol boundaries using only the Layer-2 MAC address.
+# ==========================================================================
+
+id: pcap_chain_sv_goose_dual_role
+name: "SV / GOOSE Dual-Role Device Attribution"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst conducting device fingerprinting across
+  an IEC 61850 digital substation network.  You have two packet captures:
+    1. Trip_Samples_Values_all_devices_240430.pcapng  — Process Bus SV
+    2. goose_breaker_trip.pcap  — Process Bus GOOSE traffic
+
+  Relevant IEC 61850 SV background:
+  - Sampled Values (EtherType 0x88BA) carry sampled analogue measurements
+    (currents / voltages) from merging units (MUs) to IEDs.
+  - The noASDU field in the SV PDU specifies how many Application Service
+    Data Units (sample sets) are packed into a single PDU.
+  - IEC 61869-9 specifies 80 samples/cycle; most compliant MUs use
+    noASDU=1 (one sample per frame) for lowest latency.
+  - A device using noASDU=8 is sending 8 samples per frame — an
+    unusual packing choice that can be used as a device fingerprint.
+  - SV source MAC addresses are unique per device port; a device that
+    publishes both SV and GOOSE from the same port will use the SAME
+    source MAC for both streams.
+
+hint: |
+  Work methodically: find the high-packing-ratio SV publisher first,
+  extract its MAC, then look for it in the GOOSE stream.
+
+objective: |
+  A merging unit on the process bus is sending Sampled Values with an
+  unusual packing ratio.
+
+  Step 1 — SV capture ({{ pcap_path_1 }}):
+    Find the SV publisher that uses noASDU=8 (eight samples packed per
+    frame).  Record its source MAC address and the svID from the ASDU
+    header.
+
+  Step 2 — GOOSE capture ({{ pcap_path_2 }}):
+    Search for a GOOSE publisher whose source MAC exactly matches what
+    you found in Step 1.  That same physical device is also publishing
+    status information on the station/process bus as a GOOSE stream.
+
+  Report the GoCBRef (gocbRef field) of the GOOSE stream published by
+  that device.
+
+
+environment:
+  pcap_path_1: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+  pcap_path_2: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # Chain:
+  #   SV   → noASDU=8 → svID=E03A102MU0103 → src MAC b4:b1:5a:1e:7d:d9
+  #           (Siemens 7XV8810 MercomMU, OUI Siemens AG)
+  #   GOOSE → same src MAC b4:b1:5a:1e:7d:d9
+  #         → GoCBRef E03A102_UD1/LLN0$GO$Control_DataSet
+  method: contains
+  expected: "E03A102_UD1/LLN0$GO$Control_DataSet"
+  case_sensitive: true
+

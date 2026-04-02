@@ -1,0 +1,50 @@
+# ==========================================================================
+# Task: MMS Protection Function Reconnaissance
+# Type: pcap_analysis
+# Difficulty: Hard
+#
+# The agent must examine the MMS data model to enumerate the
+# protection functions running on the IED, recognizing the
+# IEC 61850 Logical Node naming conventions.
+# ==========================================================================
+
+id: pcap_mms_protection_recon
+name: "MMS Protection Function Enumeration"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst profiling a protection relay by
+  analyzing its IEC 61850 MMS data model.  In IEC 61850, protection
+  functions are represented as Logical Nodes with standardized
+  prefixes.  For example:
+    - PTOC = Time Overcurrent
+    - PTOV = Time Overvoltage
+    - PTUV = Time Undervoltage
+    - PDIS = Distance (impedance)
+    - PIOC = Instantaneous Overcurrent
+    - PTRC = Trip Conditioning
+    - RBRF = Breaker Failure
+    - RSYN = Synchrocheck / Reclosing
+  An XCBR Logical Node represents a Circuit Breaker (IEC 61850-7-4).
+
+hint: |
+  XCBR Logical Nodes appear in the MMS data model with a supervision
+  prefix (e.g. SXCBR1, SXCBR2).
+
+objective: |
+  Analyze the MMS traffic in {{ pcap_path }}.  Determine how many
+  distinct circuit breaker Logical Nodes (XCBR class) are modeled
+  in the IED's data model.  Report the total count of unique XCBR
+  instances as a single integer.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The MMS traffic contains three XCBR instances:
+  # SXCBR1, SXCBR2, SXCBR3 (all with $ST$Blk data attributes).
+  method: contains
+  expected: "3"
+  case_sensitive: false
+

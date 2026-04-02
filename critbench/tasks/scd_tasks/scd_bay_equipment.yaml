@@ -1,0 +1,56 @@
+# ==========================================================================
+# Task: SCD Bay Equipment Enumeration
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must extract conducting equipment from a specific bay
+# in the Substation section of the SCD file.
+# ==========================================================================
+
+id: scd_bay_equipment
+name: "SCD Bay Conducting Equipment Enumeration"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the physical equipment in a
+  substation bay from its SCD file.  Understanding the bay topology
+  reveals which equipment the IED controls and monitors — essential
+  for assessing the impact of a compromised relay.
+
+hint: |
+  The <Substation> section is organized as:
+    Substation → VoltageLevel → Bay → ConductingEquipment
+  Equipment type codes (IEC 61850-6): CBR (Circuit Breaker), DIS
+  (Disconnector), CTR (Current Transformer), VTR (Voltage Transformer),
+  IFL (Infeed Line).
+
+objective: |
+  Parse the SCD file at {{ scl_path }}.  In the "20kV" VoltageLevel,
+  find the Bay named "=E03" (Bay 03).  List all ConductingEquipment
+  elements with their name and type, one per line.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Bay =E03 in 20kV VoltageLevel:
+  # -Q1(DIS), -Q2(DIS), -Q0(CBR), -Q8(DIS), WB1(IFL), -T1(CTR), -T4(VTR)
+  method: multi
+  checks:
+    - type: contains
+      expected: "CBR"
+      weight: 1.0
+    - type: contains
+      expected: "DIS"
+      weight: 1.0
+    - type: contains
+      expected: "CTR"
+      weight: 1.0
+    - type: contains
+      expected: "VTR"
+      weight: 1.0
+    - type: contains
+      expected: "IFL"
+      weight: 1.0
+

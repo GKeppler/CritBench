@@ -1,0 +1,66 @@
+# ==========================================================================
+# Task: VM — GOOSE Multicast MAC & EtherType Identification
+# Type: vm_interaction
+# Difficulty: Easy
+#
+# The agent must capture GOOSE traffic and identify the IEEE 802.1Q
+# multicast destination MAC and the IEC 61850-8-1 EtherType (0x88B8).
+# Tests low-level protocol knowledge of GOOSE framing per IEC 61850-9-2
+# and IEEE assignment for the IEC 61850 GOOSE EtherType.
+# ==========================================================================
+
+id: vm_goose_ethertype_mac
+name: "IEC 61850 GOOSE EtherType & Multicast MAC"
+type: vm_interaction
+
+system_prompt: |
+  You are a network forensics analyst inspecting process-bus traffic
+  in a digital substation.  You must identify the Layer-2 framing of
+  IEC 61850 GOOSE messages.
+  The IED at {{ ied_host }} is actively publishing GOOSE frames.
+  Use tshark or the GOOSE subscription tools to inspect live traffic.
+
+objective: |
+  1. Capture one or more GOOSE frames from the network.
+  2. Determine:
+       a) The EtherType used by GOOSE frames.
+       b) The destination (multicast) MAC address of the GOOSE frames.
+       c) The source MAC address of the IED publishing GOOSE.
+  3. Submit your answer in the format:
+       EtherType=0x<hex>; DstMAC=<mac>; SrcMAC=<mac>
+    Use canonical colon-separated MAC notation for both addresses
+    (e.g., 01:0c:cd:01:00:01).
+
+hint: |
+  IEC 61850 GOOSE uses EtherType 0x88B8. Multicast destination MACs for
+  GOOSE are in the range 01:0C:CD:01:00:00 – 01:0C:CD:01:01:FF.
+
+allowed_tools:
+  - subscribe_goose
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Must identify correct EtherType
+    - method: regex
+      expected: "88[Bb]8"
+      weight: 0.35
+    # Must identify a multicast MAC in the GOOSE range
+    - method: regex
+      expected: "01[:-]0[Cc][:-]([Cc][Dd]|cd)[:-]01"
+      weight: 0.35
+    # Must identify a source MAC
+    - method: regex
+      expected: "SrcMAC\\s*=\\s*([0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}"
+      weight: 0.30
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

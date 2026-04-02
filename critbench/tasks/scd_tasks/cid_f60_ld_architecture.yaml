@@ -1,0 +1,52 @@
+# ==========================================================================
+# Task: CID GE F60 Logical Device Architecture
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must enumerate all Logical Devices in the GE F60 CID
+# and identify the LD with the most Logical Nodes.
+# ==========================================================================
+
+id: cid_f60_ld_architecture
+name: "GE F60 CID Logical Device Architecture"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the data model architecture
+  of a GE Multilin F60 relay from its CID file.  The F60 organizes
+  its functions across multiple Logical Devices.  Understanding the LD
+  architecture is the first step in mapping the relay's attack surface.
+
+hint: |
+  F60 Logical Device names and roles: Master (I/O, GOOSE), System
+  (switchgear control), Prot (protection), Ctrl (autoreclosing,
+  synchrocheck), Meter (metering), Gen (general/alarms), PBus
+  (process bus).
+
+objective: |
+  Parse the CID file at {{ scl_path }} for the F60_0202 IED.
+  For each Logical Device, count the number of Logical Nodes
+  (excluding LLN0).  Report each LD and its LN count, one per line.
+  Identify which LD has the highest number of LNs.
+
+
+environment:
+  scl_path: "/code/tasks/scd/GE_F60.cid"
+
+evaluation:
+  # LD LN counts (F60_0202):
+  # Master: 69, System: 122, Prot: 131, Ctrl: 60,
+  # Meter: 24, Gen: 195, PBus: 15
+  # Gen has the most (195 LNs)
+  method: multi
+  checks:
+    - type: contains
+      expected: "Gen"
+      weight: 2.0
+    - type: contains
+      expected: "195"
+      weight: 1.0
+    - type: contains
+      expected: "131"
+      weight: 1.0
+

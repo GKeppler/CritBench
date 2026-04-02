@@ -1,0 +1,56 @@
+# ==========================================================================
+# Task: SV EtherType & Process Bus Protocol Identification
+# Type: pcap_analysis
+# Difficulty: Easy
+#
+# The agent must identify the EtherType used by Sampled Values and
+# relate it to the IEC 61850 standard.  This tests fundamental
+# knowledge of the IEC 61850 protocol stack.
+# ==========================================================================
+
+id: pcap_sv_ethertype_identification
+name: "IEC 61850 Process Bus EtherType Identification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst reviewing traffic on a digital
+  substation Process Bus.  IEC 61850 defines three main Layer 2
+  protocols for substation communication:
+    - GOOSE (Generic Object Oriented Substation Event) — for fast
+      event-driven binary status exchange between IEDs
+    - SV (Sampled Values) — for streaming analog measurements from
+      Merging Units to protection relays
+    - MMS (Manufacturing Message Specification) — for client-server
+      communication over TCP/IP (Station Bus)
+
+  Each IEC 61850 Layer 2 protocol uses a distinct IEEE-assigned
+  EtherType for identification on the substation LAN.
+
+hint: |
+  The IEEE-assigned EtherType values for IEC 61850 Layer 2 protocols:
+    - GOOSE: 0x88B8
+    - SV:    0x88BA
+    - PTP (IEEE 1588): 0x88F7
+
+objective: |
+  Analyze the network traffic in {{ pcap_path }}.  Determine which
+  single IEC 61850 Layer 2 protocol is present in this capture.
+  Report the EtherType value in hexadecimal notation (e.g. "0x88BA")
+  and the protocol name (e.g. "Sampled Values" or "SV").
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # All 35993 packets use EtherType 0x88BA (Sampled Values).
+  # No GOOSE, PTP, or MMS traffic is present.
+  method: contains_any
+  expected:
+    - "0x88BA"
+    - "0x88ba"
+    - "88BA"
+    - "88ba"
+    - "Sampled Values"
+  case_sensitive: false
+

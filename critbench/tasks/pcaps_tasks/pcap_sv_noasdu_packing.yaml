@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: SV ASDU Packing Analysis
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must analyze the noASDU field in SV frames to identify
+# which device uses multi-ASDU packing.  This tests understanding
+# of IEC 61850-9-2 LE (Light Edition) vs full 9-2 differences.
+# ==========================================================================
+
+id: pcap_sv_noasdu_packing
+name: "SV ASDU Packing — noASDU Analysis"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst investigating IEC 61850-9-2 Sampled
+  Values on a Process Bus.  Each SV Ethernet frame contains an SV PDU
+  with a field called noASDU (Number of ASDUs per frame).  Most
+  compliant Merging Units send a fixed number of ASDUs per frame, but
+  some vendors pack multiple ASDUs per frame to reduce Ethernet frame
+  overhead.  Understanding the packing is critical for IDS signature
+  writing and traffic analysis.
+
+hint: |
+  The IEC 61850-9-2 LE profile typically sends 1 ASDU per frame at
+  4000 or 4800 samples/second (50 Hz or 60 Hz systems).  Some vendors
+  pack multiple ASDUs per frame (e.g. 8 ASDUs per frame) — look for
+  the stream where noASDU differs from the 1-ASDU norm.
+
+objective: |
+  Analyze the SV traffic in {{ pcap_path }}.  Examine the noASDU field
+  in each SV stream.  Identify the svID of the Merging Unit that
+  sends more than 1 ASDU per Ethernet frame (multi-ASDU packing).
+  Report the exact svID string.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # MU320_MU0101 and SEL401_MU0201 both send noASDU=1 (standard LE).
+  # E03A102MU0103 (Siemens SIPROTEC) sends noASDU=8 (multi-packing).
+  method: contains
+  expected: "E03A102MU0103"
+  case_sensitive: true
+

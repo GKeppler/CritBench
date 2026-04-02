@@ -1,0 +1,87 @@
+# ==========================================================================
+# Task: MMS Discovery → Distance Protection Zone Count
+# Type: pcap_analysis
+# Difficulty: Hard  (blind IED discovery + model enumeration)
+#
+# No target IP is provided.  The agent must:
+#   1. Identify the IEC 61850 MMS server from passive traffic analysis.
+#   2. Discover its Logical Device structure (GetNameList).
+#   3. Find the distance protection LD and enumerate ZMFPDIS LN instances.
+#   4. Report the number of distance zones.
+#
+# IEC 61850-7-4 background knowledge required:
+#   - LN class PDIS = Distance Protection Zone
+#   - LD name ZMF = Distance protection function group (vendor convention)
+#   - The number of PDIS instances equals the number of active distance zones
+# ==========================================================================
+
+id: pcap_chain_mms_discovery_distance_zones
+name: "Blind MMS Discovery to Distance Zone Enumeration"
+type: pcap_analysis
+
+system_prompt: |
+  You are conducting an ICS/OT security assessment on an IEC 61850
+  substation network.  You have a single packet capture of station-bus
+  MMS traffic.  You have NOT been told the IP address or model of any
+  device; you must determine everything from the captured traffic.
+
+  IEC 61850 MMS background:
+  - MMS (Manufacturing Message Specification) runs over TCP port 102.
+  - An IED acts as the MMS server; the SCADA / EWS acts as the client.
+  - The MMS Initiate service establishes sessions.  Server-initiated
+    connections are uncommon; the IED is typically the passive listener.
+  - GetNameList(scope=domain) returns all Logical Device (LD) names.
+  - GetNameList(scope=aa) within a domain returns all Logical Node (LN)
+    names visible inside that LD.
+  - IEC 61850-7-4 standardises LN class names:
+      PDIS  — Distance Protection Zone
+      PTRC  — Trip Conditioning
+      MMXU  — Measurement Unit
+  - Protection relay vendors often group distance-protection functions
+    into a dedicated Logical Device whose name reflects its function
+    (e.g. "ZMF" = impedance/distance function group).
+  - The number of PDIS Logical Node instances inside a distance-
+    protection LD equals the number of independently-configurable
+    protection zones.
+
+hint: |
+  Work in three stages:
+    Stage 1 — Discover the IED: from traffic patterns, identify which
+              host is the MMS server (passive listener on TCP/102).
+    Stage 2 — Enumerate LDs: find all Logical Devices present on the IED
+              and identify the one associated with distance protection.
+    Stage 3 — Count zones: enumerate the LNs in that LD and count how
+              many belong to the class PDIS.
+
+objective: |
+  Analyse the MMS network capture ({{ pcap_path }}) without any prior
+  knowledge of devices or IP addresses.
+
+  Stage 1: Determine the IP address of the MMS server (the IED).
+           (Hint: the server is the passive TCP listener; look at
+           who is accepting connections to port 102.)
+
+  Stage 2: Discover the Logical Device whose name indicates it hosts
+           distance protection functions.  The LD name will contain
+           a vendor-specific abbreviation for impedance/distance
+           protection; look for standard IEC 61850 function abbreviations.
+
+  Stage 3: Count the number of Distance Protection Zone (PDIS) logical
+           node instances inside that LD.
+
+  Report the total count of distance protection zones.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # Chain:
+  #   MMS  → server at 169.254.10.12 (TCP 102 listener, REL670_0102)
+  #        → GetNameList → LD "REL670_0102ZMF_1" (distance protection group)
+  #        → PDIS instances: ZMFPDIS1, ZMFPDIS2, ZMFPDIS3, ZMFPDIS4,
+  #                          ZMFPDIS5, ZMFPDIS6, ZMFPDIS7  →  7 zones
+  method: contains
+  expected: "7"
+  case_sensitive: false
+

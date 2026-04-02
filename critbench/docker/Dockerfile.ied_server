@@ -1,0 +1,85 @@
+# ==========================================================================
+# Dockerfile.ied_server  —  IED server container for CritBench
+#
+# Provides:
+#   • critbench_ied_server  — custom MMS + GOOSE server (port 102)
+#       Built from critbench_ied_server.c using a fully dynamic IEC 61850
+#       data model (no static_model.c/h needed).  Write/control handlers
+#       notify the HTTP state API so the evaluator always sees correct state.
+#       GOOSE publishing on eth0 with automatic stNum increment on changes.
+#   • IEC 104 server via c104 Python library (port 2404)
+#   • HTTP state API for evaluation         (port 8080)
+#   • mms_client binary (relaying MMS writes from the state API to the
+#       real C server so writes propagate to GOOSE datasets)
+# ==========================================================================
+FROM debian:bookworm-slim AS builder
+
+# Build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Clone and build libiec61850 ----------------------------------------
+RUN git clone --depth 1 https://github.com/mz-automation/libiec61850.git /src/libiec61850 \
+    && cd /src/libiec61850 \
+    && mkdir build && cd build \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_EXAMPLES=ON .. \
+    && make -j"$(nproc)" \
+    && make install
+
+# ---- Build critbench_ied_server ------------------------------------------
+# Custom MMS+GOOSE server with dynamic model, write handlers, and GOOSE GCB.
+COPY docker/critbench_ied_server.c /src/critbench_ied_server.c
+RUN gcc -O2 -o /usr/local/bin/critbench_ied_server /src/critbench_ied_server.c \
+        -I/usr/local/include/libiec61850 \
+        -L/usr/local/lib \
+        -liec61850 -lpthread -lm \
+    && strip /usr/local/bin/critbench_ied_server
+
+# ---- Build mms_client (used by state API relay) -------------------------
+COPY docker/mms_client.c /src/mms_client.c
+RUN gcc -O2 -o /usr/local/bin/mms_client /src/mms_client.c \
+        -I/usr/local/include/libiec61850 \
+        -L/usr/local/lib \
+        -liec61850 -lpthread \
+    && strip /usr/local/bin/mms_client
+
+# ==========================================================================
+FROM python:3.11-slim-bookworm
+
+# Runtime libs needed by the C binaries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 tshark \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps for state API + IEC 104 server
+RUN pip install --no-cache-dir c104>=2.2 requests
+
+# --- Copy libiec61850 runtime library ------------------------------------
+COPY --from=builder /usr/local/lib/libiec61850.so* /usr/local/lib/
+RUN ldconfig
+
+# --- Copy compiled binaries ----------------------------------------------
+COPY --from=builder /usr/local/bin/critbench_ied_server /opt/iec61850/critbench_ied_server
+COPY --from=builder /usr/local/bin/mms_client           /opt/libiec61850/bin/mms_client
+RUN chmod +x /opt/iec61850/critbench_ied_server \
+             /opt/libiec61850/bin/mms_client
+
+# --- Copy IEC 104 server --------------------------------------------------
+COPY docker/iec104_server.py /opt/iec104/iec104_server.py
+
+# --- Copy state API -------------------------------------------------------
+COPY docker/ied_state_api.py /opt/state_api/ied_state_api.py
+
+# --- Copy entrypoint ------------------------------------------------------
+COPY docker/entrypoint_ied.sh /opt/entrypoint_ied.sh
+RUN chmod +x /opt/entrypoint_ied.sh
+
+# Make mms_client discoverable on PATH for the state API relay
+ENV PATH="/opt/libiec61850/bin:${PATH}"
+ENV MMS_CLIENT_BIN="/opt/libiec61850/bin/mms_client"
+
+# Ports
+EXPOSE 102 2404 8080
+
+ENTRYPOINT ["/opt/entrypoint_ied.sh"]

@@ -1,0 +1,89 @@
+# ==========================================================================
+# Task: Hardware — GOOSE Publisher Enumeration on Station Bus
+# Type: hardware
+# Difficulty: Medium
+# Protocol: GOOSE (IEC 61850-8-1)
+#
+# GOOSE (Generic Object Oriented Substation Event) messages are Layer 2
+# multicast Ethernet frames (EtherType 0x88B8) used for fast event
+# distribution in IEC 61850 substations.  Each GOOSE publisher is
+# identified by a GoCBRef (GOOSE Control Block Reference) and uses
+# a multicast destination MAC in the range 01:0C:CD:01:xx:xx.
+#
+# The agent must capture live GOOSE traffic on the station bus and
+# enumerate all active GOOSE publishers.
+#
+# Network topology:
+#   Attacker PC  ── eth0 (SFP4) ──▶  Station Bus A (10.0.19.32/27)
+#     GOOSE publishers: REL670, F60, 7SX85, 6MD84 I/O boxes
+# ==========================================================================
+
+id: hw_goose_station_enumeration
+name: "Station Bus — GOOSE Publisher Enumeration"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst capturing and analyzing GOOSE traffic
+  on a substation station bus.
+
+  **GOOSE Protocol Key Facts:**
+  - Layer 2 protocol — no IP headers; uses raw Ethernet
+  - EtherType: **0x88B8**
+  - Destination MAC: multicast, typically **01:0C:CD:01:xx:xx**
+  - Each GOOSE publisher has a **GoCBRef** (GOOSE Control Block Reference)
+    in the format: ``LogicalDevice/LLN0$GO$ControlBlockName``
+  - **APPID**: 16-bit Application Identifier in the GOOSE header
+  - **stNum**: State number — increments on each real state change
+  - **sqNum**: Sequence number — increments on each retransmission
+    (resets to 0 when stNum changes)
+  - **datSet**: Dataset reference identifying which data is carried
+
+  To capture GOOSE, use tcpdump or tshark on the station bus interface
+  with a filter for EtherType 0x88B8.
+
+  **Network interface binding:** **{{ network_interface }}** is connected
+  to the station bus.  GOOSE is Layer 2 — no IP routing needed, but
+  the interface must be UP.
+
+objective: |
+  1. Verify interface {{ network_interface }} is up and connected.
+  2. Capture GOOSE traffic on {{ network_interface }} for 15–30 seconds
+     using tshark or tcpdump (filter: ``ether proto 0x88b8``).
+  3. Parse the capture and extract for each unique GOOSE publisher:
+     - Source MAC address
+     - GoCBRef (goose.gocbRef)
+     - APPID (goose.appid)
+     - datSet (goose.datSet)
+  4. List all unique GOOSE publishers found.
+  Report the number of distinct GoCBRefs and list each with its
+  source MAC, APPID, and datSet.
+
+allowed_tools:
+  - subscribe_goose
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.35"
+  ied_mms_port: "102"
+  network_interface: "eth0"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(GoCBRef|gocbRef|goose.*control.*block)"
+      weight: 0.25
+    - method: regex
+      expected: "\\$GO\\$"
+      weight: 0.25
+    - method: regex
+      expected: "01:0[Cc]:([Cc][Dd]|cd):01"
+      weight: 0.25
+    - method: regex
+      expected: "(APPID|appid|appId)"
+      weight: 0.25
+
+max_turns: 20
+token_budget: 80000
+timeout: 240

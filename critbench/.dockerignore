@@ -1,0 +1,32 @@
+# ==========================================================================
+# .dockerignore  —  CritBench agent image build context
+#
+# Excludes evaluation code, task definitions (with answers), outputs,
+# and other files that the agent container should NEVER have access to.
+# ==========================================================================
+
+# Evaluation code and answers (MUST be excluded)
+evaluation/
+tasks/definitions/
+tasks/definitions_hardware/
+tasks/pcaps/
+
+# Orchestrator and Docker configs (host-side only)
+run_experiments.py
+.env
+
+# Output and caches
+output/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+
+# Version control
+.git/
+.gitignore
+
+# IDE / editor
+.vscode/
+*.swp
+*.swo

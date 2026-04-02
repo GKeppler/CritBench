@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: GOOSE Stream Enumeration
+# Type: pcap_analysis
+# Difficulty: Easy
+#
+# The agent must enumerate all distinct GOOSE publishers in the
+# capture and report the total count of unique GoCBRefs.
+# ==========================================================================
+
+id: pcap_goose_stream_count
+name: "GOOSE Publisher Enumeration"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst performing asset discovery on an
+  IEC 61850 digital substation network.  GOOSE (Generic Object
+  Oriented Substation Event) frames use EtherType 0x88B8.  Each
+  GOOSE publisher is uniquely identified by its GoCBRef (GOOSE
+  Control Block Reference) embedded in the frame PDU.
+
+  A complete asset inventory requires enumerating every distinct
+  GOOSE publisher — protection relays, bay controllers, and merging
+  units all publish GOOSE messages.
+
+objective: |
+  Analyze the PCAP file at {{ pcap_path }}.  Enumerate all distinct
+  GOOSE streams by unique GoCBRef.  List every GoCBRef you find.
+  Report the total number of unique GOOSE publishers (GoCBRefs) as
+  a single integer.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # Six distinct GOOSE publishers found in the capture:
+  #   1. E03A101_PROT/LLN0$GO$Control_DataSet    (Siemens SIPROTEC)
+  #   2. E03A102_UD1/LLN0$GO$Control_DataSet     (Siemens SIPROTEC)
+  #   3. F60_0202Master/LLN0$GO$F60_TRIP_G       (GE Multilin F60)
+  #   4. MU320_0101CTRL/LLN0$GO$FastGOOSE1       (ABB/Hitachi MU320)
+  #   5. REL670_0102LD0/LLN0$GO$REL670_TRIP_G    (ABB/Hitachi REL670)
+  #   6. TEMPLATECFG/LLN0$GO$GPub01              (SEL device)
+  method: contains
+  expected: "6"
+  case_sensitive: false
+

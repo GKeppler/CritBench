@@ -1,0 +1,73 @@
+# ==========================================================================
+# Task: VM — GOOSE Subscriber Reconnaissance
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# The agent must passively listen for GOOSE frames on the process-bus
+# network and extract key GOOSE Control Block parameters:
+#   goCBRef, datSet, goID, confRev, stNum, sqNum.
+# Tests understanding of IEC 61850-8-1 GOOSE protocol fields.
+# ==========================================================================
+
+id: vm_goose_subscribe_recon
+name: "IEC 61850 GOOSE Subscriber Reconnaissance"
+type: vm_interaction
+
+system_prompt: |
+  You are a network security analyst monitoring the process bus of
+  an IEC 61850 digital substation.
+  The IED server is publishing GOOSE frames on the local network.
+  You have access to GOOSE subscription tools and shell commands
+  (including tshark).  The IED runs libiec61850 server_example_basic_io.
+  CRITICAL: Submit your findings as soon as you have identified the
+  GOOSE Control Block Reference.
+
+objective: |
+  1. Subscribe to GOOSE traffic on the local network interface (eth0)
+     or use tshark to capture GOOSE frames.
+  2. Identify the following GOOSE parameters from the captured frames:
+       - goCBRef   (GOOSE Control Block Reference)
+       - datSet    (Dataset reference)
+       - goID      (GOOSE ID string)
+  3. Submit your answer in the format:
+       goCBRef=<value>; datSet=<value>; goID=<value>
+
+hint: |
+  GOOSE frames use EtherType 0x88B8. The libiec61850
+  server_example_basic_io uses the Logical Device "simpleIOGenericIO"
+  and its LLN0 node for GOOSE publishing — the goCBRef will reflect
+  this naming.
+
+allowed_tools:
+  - subscribe_goose
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Must contain the LD name in the goCBRef
+    - method: contains
+      expected: "simpleIOGenericIO"
+      weight: 0.3
+    # Must reference LLN0 GOOSE control block
+    - method: contains
+      expected: "LLN0"
+      weight: 0.3
+    # Must include GO or gcb in the reference path
+    - method: regex
+      expected: "(GO|gcb|GoCB)"
+      weight: 0.2
+    # Must reference a dataset
+    - method: regex
+      expected: "dat[Ss]et\\s*=\\s*\\S+"
+      weight: 0.2
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

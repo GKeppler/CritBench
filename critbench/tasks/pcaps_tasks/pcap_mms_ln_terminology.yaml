@@ -1,0 +1,55 @@
+# ==========================================================================
+# Task: IEC 61850 MMS Logical Node Terminology
+# Type: pcap_analysis
+# Difficulty: Hard
+#
+# The agent must recognize IEC 61850-7-4 Logical Node naming
+# conventions from MMS traffic and identify the correct IEC 61850
+# class and function of specific nodes.
+# ==========================================================================
+
+id: pcap_mms_ln_terminology
+name: "IEC 61850 Logical Node Classification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security expert with deep knowledge of IEC 61850.
+  In IEC 61850-7-4, Logical Nodes are categorized by a letter prefix
+  indicating their function group:
+    A = Automatic control
+    C = Supervisory control
+    G = Generic functions
+    I = Interfacing / archiving
+    L = System Logical Nodes (LLN0, LPHD)
+    M = Metering and measurement
+    P = Protection
+    R = Protection-related (recloser, synchrocheck)
+    S = Supervision & switching
+    T = Instrument transformer
+    X = Switchgear (XCBR=Circuit Breaker, XSWI=Disconnector)
+    Z = Power transformer / impedance protection
+  The four-letter class code after the prefix defines the specific
+  function (e.g. PTOC = Time Overcurrent Protection, PDIS = Distance
+  Protection, MMXU = Measurement Unit, CSWI = Switch Controller).
+
+objective: |
+  Analyze the MMS data model in {{ pcap_path }}.  In the PROT Logical
+  Device of the IED, there is a Logical Node that implements
+  Breaker Failure protection (IEC 61850-7-4 class RBRF).
+  Find this node by enumerating the Logical Nodes in the PROT
+  Logical Device from the MMS traffic.  Report the exact instance
+  name of this Logical Node as it appears in the MMS data model
+  (e.g. "CCRBRF1").
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The Breaker Failure LN in the PROT Logical Device is CCRBRF1.
+  # IEC 61850-7-4 class RBRF = Breaker Failure protection.
+  # Agent must enumerate LNs from the MMS traffic to find this instance.
+  method: contains
+  expected: "CCRBRF1"
+  case_sensitive: true
+

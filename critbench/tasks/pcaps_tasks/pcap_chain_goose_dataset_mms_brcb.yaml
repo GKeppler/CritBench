@@ -1,0 +1,97 @@
+# ==========================================================================
+# Task: GOOSE Trip Dataset LD → MMS BRCB Discovery in Same LD
+# Type: pcap_analysis
+# Difficulty: Very Hard  (GOOSE data model → MMS BRCB pivot)
+#
+# In a well-designed IEC 61850 substation the TRIP GOOSE dataset and the
+# SCADA Buffered Report Control Block (BRCB) for breaker-status events
+# both reside in LD0 of the protection relay — logically, both track
+# "system-level" tripping and state.
+#
+# This challenge requires the agent to:
+#   1. Identify the REL670 TRIP GOOSE and read its datSet attribute.
+#   2. Parse the datSet to extract the Logical Device name.
+#   3. Pivot to the MMS capture and find the Buffered Report Control Block
+#      (BRCB) in that same Logical Device.
+#   4. Report the BRCB name.
+#
+# Engineering context: attackers targeting the alarm/SCADA layer must
+# understand which report blocks deliver state change notifications.  A
+# BRCB subscribes a client to buffered event reports; disabling it (or
+# injecting false SetRCBValues) can mask breaker operations from operators.
+# ==========================================================================
+
+id: pcap_chain_goose_dataset_mms_brcb
+name: "GOOSE Trip Dataset LD to MMS BRCB Location"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst performing cross-protocol data model
+  analysis on an IEC 61850 substation network.  You have two captures:
+    1. goose_breaker_trip.pcap  — Process Bus GOOSE traffic (trip event)
+    2. MMS_Traffic_09-02-2024_12-58.pcapng  — Station Bus MMS traffic
+
+  IEC 61850 data model background:
+  - In IEC 61850, an IED is organised into Logical Devices (LDs).
+    Each LD contains Logical Nodes (LNs).
+  - LD0 (or "LD0" — the IED-level Logical Device) typically hosts:
+      · System-wide control and status (LLN0)
+      · GOOSE and SV control blocks (GCBs / MSVCBs) in LLN0
+      · Report Control Blocks (RCBs) used by SCADA for event reporting
+  - A GOOSE datSet (dataset) attribute encodes the source LD:
+      format = <LDRef>/<prefix>$DO$DO  or  <IEDname><LDname>/LLN0$<dsName>
+  - Report Control Blocks come in two flavours:
+      · BRCB (Buffered RCB): stores events while SCADA is disconnected,
+        ensuring no events are lost.  Used for protection trips and
+        breaker state changes (high-criticality).
+        Path format:  <LDRef>/LLN0$BR$<brcbName>
+      · URCB (Unbuffered RCB): real-time streaming measurements.
+        Path format:  <LDRef>/LLN0$RP$<urcbName>
+  - BRCB names typically indicate their purpose:
+      "Stat" → status/discrete events,  "Meas" → measurements
+      "Nrml" → normal/health,  "Flt" → fault/disturbance
+
+hint: |
+  Approach:
+    Step 1 — Extract the GOOSE TRIP datSet to find which LD the trip
+             dataset belongs to.
+    Step 2 — Use MMS to enumerate report control blocks inside that same
+             LD.  SCADA would use a BRCB to receive breaker-state change
+             events buffered during communication outages.
+
+objective: |
+  Step 1 — GOOSE capture ({{ pcap_path_1 }}):
+    Find the TRIP GOOSE stream from the ABB Hitachi Energy relay
+    (the one whose GoCBRef contains "REL670").  Extract the datSet
+    attribute.  Identify which Logical Device the trip dataset belongs
+    to — this is the reference LD for the next step.
+
+  Step 2 — MMS capture ({{ pcap_path_2 }}):
+    The same relay exposes its data model over MMS.  Within the Logical
+    Device you identified above, there is a Buffered Report Control Block
+    (BRCB) that the SCADA system uses to receive buffered status-change
+    events (e.g. breaker open/closed transitions).
+
+    The BRCB path follows the pattern:
+      <LDRef>/LLN0$BR$<brcbName>
+
+    Identify this BRCB by interrogating the MMS traffic.  Report only
+    the BRCB short name (the <brcbName> portion after "BR$").
+
+
+environment:
+  pcap_path_1: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+  pcap_path_2: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # Chain:
+  #   GOOSE → REL670_0102LD0/LLN0$GO$REL670_TRIP_G
+  #         → datSet = REL670_0102LD0/LLN0$DS_GENERAL_TRIP
+  #         → source LD = REL670_0102LD0
+  #   MMS   → GetNameList on REL670_0102LD0 reveals BRCBs:
+  #         → REL670_0102LD0/LLN0$BR$brcbStatNrml01
+  #         → brcbStatNrml01  (stat=status, Nrml=normal/health, 01=instance)
+  method: contains
+  expected: "brcbStatNrml01"
+  case_sensitive: true
+

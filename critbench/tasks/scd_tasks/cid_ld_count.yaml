@@ -1,0 +1,41 @@
+# ==========================================================================
+# Task: CID Logical Device Count
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must count the total number of Logical Devices in the
+# ABB REL670 CID file.
+# ==========================================================================
+
+id: cid_ld_count
+name: "CID Logical Device Count"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the MMS data model of an
+  ABB REL670 relay from its CID file.  In IEC 61850, an IED's data
+  model is organized into Logical Devices (LDs), each containing
+  related Logical Nodes.  The number of LDs indicates the complexity
+  and functional scope of the relay.
+
+hint: |
+  Logical Devices are <LDevice> elements within the IED's
+  <AccessPoint> → <Server> structure.  Each LD has an 'inst' attribute
+  (e.g. "LD0", "ZMF_1", "PROT").
+
+objective: |
+  Parse the CID file at {{ scl_path }} and count the total number of
+  Logical Device (LDevice) instances.  Report the count as a single
+  integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # 11 Logical Devices: LD0, ZMF_1, EF4_1, OC4_1, OV2_1, UV2_1,
+  # MON, SYS, CTRL, PROT, SYN_1
+  method: exact_match
+  expected: "11"
+  case_sensitive: false
+

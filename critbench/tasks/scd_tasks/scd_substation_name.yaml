@@ -1,0 +1,44 @@
+# ==========================================================================
+# Task: SCD KIT KASTEL Substation Name
+# Type: scl_analysis
+# Difficulty: Easy
+#
+# The agent must extract the substation name and description from
+# the KIT KASTEL SCD file as a basic reconnaissance task.
+# ==========================================================================
+
+id: scd_substation_name
+name: "SCD Substation Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst performing initial reconnaissance on
+  a substation configuration file.  Extracting substation metadata
+  helps contextualize the configuration and verify you have the
+  correct file.
+
+hint: |
+  The <Substation> element has 'name' and 'desc' attributes that
+  identify the facility.  The SCL root element may also contain a
+  <Header> with project information.
+
+objective: |
+  Parse the SCD file at {{ scl_path }}.  Extract and report:
+  1. The Substation name attribute
+  2. The Substation desc (description) attribute
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # Substation: name=AA1, desc="KIT KASTEL Security Lab Energy"
+  method: multi
+  checks:
+    - type: contains
+      expected: "AA1"
+      weight: 1.0
+    - type: contains
+      expected: "KIT KASTEL Security Lab Energy"
+      weight: 2.0
+

@@ -1,0 +1,52 @@
+# ==========================================================================
+# Task: GOOSE Vendor Identification via OUI
+# Type: pcap_analysis
+# Difficulty: Easy-Medium
+#
+# The agent must identify the equipment vendor for the GE Multilin F60
+# protection relay by correlating the source MAC OUI with IEEE OUI
+# registry data.  The F60_0202Master GOOSE stream originates from
+# MAC OUI dc:37:52, assigned to GE Grid Solutions.
+# ==========================================================================
+
+id: pcap_goose_vendor_oui
+name: "GOOSE Publisher Vendor Identification from OUI"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst building an asset inventory from
+  passive traffic analysis of an IEC 61850 substation.  IEEE assigns
+  Organizationally Unique Identifiers (OUIs) — the first 3 bytes of
+  a MAC address — to equipment manufacturers.  By matching the source
+  MAC OUI of each GOOSE publisher against the IEEE OUI registry you
+  can identify the vendor without any active scanning.
+
+hint: |
+  Common OUIs in IEC 61850 substations:
+    00:02:a3 / f8:02:78 = ABB / Hitachi Energy
+    b4:b1:5a           = Siemens AG
+    dc:37:52           = GE Grid Solutions (formerly GE Multilin)
+    00:30:a7           = Schweitzer Engineering Laboratories (SEL)
+
+objective: |
+  Analyze the GOOSE frames in {{ pcap_path }}.  Find the GOOSE stream
+  whose GoCBRef starts with "F60_0202Master".  Identify the source
+  MAC address of this stream and report the equipment vendor name
+  associated with its OUI.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # F60_0202Master/LLN0$GO$F60_TRIP_G is published by MAC
+  # dc:37:52:0a:0a:1d — OUI dc:37:52 is registered to GE Grid
+  # Solutions (GE Multilin).  The device is a GE Multilin F60
+  # Feeder Protection Relay.
+  method: contains_any
+  expected:
+    - "GE"
+    - "General Electric"
+    - "dc:37:52"
+  case_sensitive: false
+

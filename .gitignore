@@ -1,0 +1,23 @@
+.venv/
+.vscode/
+critbench/.env
+unused/
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python tooling artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build/package artifacts
+build/
+dist/
+*.egg-info/
+
+# Project generated outputs
+critbench/output/

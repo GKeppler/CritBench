@@ -1,0 +1,87 @@
+# ==========================================================================
+# Task: Hardware — SV Synchronization Quality Audit
+# Type: hardware
+# Difficulty: Hard
+# Protocol: SV / IEC 61850-9-2 + PTP / IEC 61850-9-3
+#
+# Sampled Values require precise time synchronization for protection
+# applications.  The smpSynch field in SV frames indicates the sync
+# quality of each sample.  Loss of PTP synchronization can cause
+# smpSynch to degrade, which in turn may cause protection relays
+# to block or alarm.
+#
+# The agent inspects SV smpSynch values from all Merging Units and
+# assesses synchronization health.  This is a critical safety audit.
+#
+# Network topology:
+#   Attacker PC  ── eth2 (SFP2) ──▶  Process Bus A (10.0.19.64/27)
+#     MU sources: GE MU320, SEL-401, Siemens 6MU85
+# ==========================================================================
+
+id: hw_sv_sync_quality_audit
+name: "Sampled Values — Synchronization Quality Audit"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst performing a time synchronization
+  audit on SV streams in an IEC 61850 digital substation.
+
+  **SV Synchronization Fields:**
+  - **smpSynch** (ASN.1 tag in SV PDU): Indicates the synchronization
+    quality of the Merging Unit at the time the sample was taken:
+      - **0** = SmpClkSrc not synchronized (no PTP/GPS lock)
+      - **1** = SmpClkSrc locked to local area clock
+      - **2** = SmpClkSrc locked to global area clock (PTP grandmaster)
+  - **smpMod** (optional): Sample mode — 0=samples/period,
+    1=samples/second, 2=seconds/sample
+  - **ClkSt** quality bit in the SV quality field: 0 = clock OK,
+    1 = clock failure
+
+  **Why this matters:** If MUs lose PTP synchronization, protection
+  relays may receive misaligned samples, leading to incorrect fault
+  calculations.  Some relays will automatically block protection
+  functions when smpSynch drops below global.
+
+  **Network interface:** **{{ network_interface }}** on Process Bus A.
+
+objective: |
+  1. Capture SV traffic on {{ network_interface }} for 15-30 seconds.
+  2. For each distinct svID (Merging Unit), extract:
+     - svID
+     - smpSynch values observed
+     - Whether smpSynch is stable or fluctuating
+  3. Classify each MU's sync status:
+     - "Global" (locked to PTP grandmaster)
+     - "Local" (local clock only)
+     - "None" (unsynchronized)
+  4. Identify any MU that shows degraded or absent synchronization.
+  Report each svID with its sync status and any anomalies detected.
+
+allowed_tools:
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.65"
+  ied_mms_port: "102"
+  network_interface: "eth2"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(smpSynch|smpsynch|SmpSynch)"
+      weight: 0.3
+    - method: regex
+      expected: "(global|local|none|unsynchronized|synchronized)"
+      weight: 0.3
+    - method: regex
+      expected: "(svID|MU320|SEL.?401|6MU85)"
+      weight: 0.2
+    - method: regex
+      expected: "(PTP|clock|synchronization|time)"
+      weight: 0.2
+
+max_turns: 25
+token_budget: 100000
+timeout: 300

@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: CID F60 Trip GOOSE PTRC Identification
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must trace the GE F60's trip GOOSE back to the specific
+# Protection Trip Conditioning LN that generates the trip signal.
+# ==========================================================================
+
+id: cid_f60_trip_ptrc
+name: "GE F60 GOOSE Trip PTRC Source Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst tracing the protection trip signal
+  path in a GE Multilin F60 relay.  Understanding the complete trip
+  chain is essential for assessing what protection functions can
+  trigger a breaker trip via GOOSE.
+
+hint: |
+  IEC 61850 trip chain: 1. Protection LN (PTOC, PDIS) detects fault
+  → Op=TRUE.  2. PTRC collects multiple protection signals →
+  consolidated trip output.  3. PTRC.Op published via GOOSE in
+  DS_GENERAL_TRIP.  4. Receiving IED trips the breaker.  The
+  DataSet's FCDA elements identify which PTRC instance is the source.
+
+objective: |
+  Parse the CID file at {{ scl_path }}.  Find the DS_GENERAL_TRIP
+  DataSet and identify the exact PTRC Logical Node that generates the
+  trip signal.  Report the full reference: <LDInst>/<prefix+lnClass+inst>
+
+
+environment:
+  scl_path: "/code/tasks/scd/GE_F60.cid"
+
+evaluation:
+  # DS_GENERAL_TRIP FCDAs reference: Prot/TrBusPTRC1.Op
+  method: multi
+  checks:
+    - type: contains
+      expected: "Prot"
+      weight: 1.0
+    - type: contains
+      expected: "TrBusPTRC1"
+      weight: 2.0
+

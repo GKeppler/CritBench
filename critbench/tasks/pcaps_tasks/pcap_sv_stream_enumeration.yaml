@@ -1,0 +1,49 @@
+# ==========================================================================
+# Task: SV Stream Enumeration
+# Type: pcap_analysis
+# Difficulty: Easy
+#
+# The agent must identify all IEC 61850-9-2 Sampled Values (SV)
+# streams in the capture and list their stream identifiers (svID).
+# ==========================================================================
+
+id: pcap_sv_stream_enumeration
+name: "IEC 61850 Sampled Values Stream Identification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing the Process Bus of an
+  IEC 61850 digital substation.  The Process Bus carries Sampled
+  Values (SV) traffic from Merging Units (MUs) to protection relays
+  and bay controllers.  SV frames use EtherType 0x88BA and each
+  stream is identified by a unique svID string inside the SV PDU.
+
+hint: |
+  This capture contains tens of thousands of high-rate SV packets —
+  all distinct streams appear within the first 10 frames and repeat
+  identically.  Use a SMALL sample (50–100 packets) to keep output
+  manageable.
+  Recommended tshark command:
+    tshark -r <pcap> -T fields -e sv.svID -c 50 2>/dev/null
+  Or use parse_pcap with max_packets=50.
+
+objective: |
+  Analyze the PCAP file at {{ pcap_path }} which contains IEC 61850-9-2
+  Sampled Values traffic.  Determine how many distinct SV streams
+  (unique svID values) are present in the capture.  List all svID
+  strings.  Report the total number of unique SV streams as a single
+  integer.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # Three distinct SV streams:
+  #   1. MU320_MU0101 (ABB MU320 Merging Unit)
+  #   2. SEL401_MU0201 (SEL-401 Merging Unit)
+  #   3. E03A102MU0103 (Siemens SIPROTEC Merging Unit)
+  method: contains
+  expected: "3"
+  case_sensitive: false
+

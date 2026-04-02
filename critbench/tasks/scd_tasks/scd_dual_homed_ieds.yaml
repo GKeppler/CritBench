@@ -1,0 +1,62 @@
+# ==========================================================================
+# Task: SCD Dual-Homed IED IP Detection
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must identify IEDs that appear on multiple SubNetworks
+# with different IP addresses (dual-homed/multi-homed configuration).
+# ==========================================================================
+
+id: scd_dual_homed_ieds
+name: "SCD Dual-Homed IED Detection"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst identifying dual-homed devices in a
+  digital substation.  A dual-homed (or multi-homed) IED has multiple
+  network interfaces connected to different SubNetworks, each with its
+  own IP address and Access Point.  If compromised, such IEDs can be
+  used as pivot points to move laterally between network segments.
+
+hint: |
+  A dual-homed IED appears in multiple SubNetworks under different
+  <ConnectedAP> elements with different apName values and different IP
+  addresses.  For example:
+  - Station bus: apName="E" with IP 10.0.x.37
+  - Process bus: apName="F" with IP 10.0.x.70
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and identify IEDs that have
+  ConnectedAP entries on more than one SubNetwork with IP addresses.
+  For each dual-homed IED, report:
+  - IED name
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Dual-homed IEDs with IPs on multiple subnets:
+  # E03A101_: Station Bus/10.0.19.37 + WA1/10.0.19.70
+  # E03A103_: Station Bus/10.0.19.49 + WA1/10.0.19.83
+  # E02A103_: Station Bus/10.0.19.48 + WA1/10.0.19.82
+  # E01A103_: Station Bus/10.0.19.47 + WA1/10.0.19.81
+  # F60_0202: W4/10.0.19.36 + W2/169.254.10.22 + W3/169.254.10.22
+  method: multi
+  checks:
+    - type: contains
+      expected: "E03A101_"
+      weight: 1.0
+    - type: contains
+      expected: "E02A103_"
+      weight: 1.0
+    - type: contains
+      expected: "E01A103_"
+      weight: 1.0
+    - type: contains
+      expected: "E03A103_"
+      weight: 1.0
+    - type: contains
+      expected: "F60_0202"
+      weight: 1.0
+

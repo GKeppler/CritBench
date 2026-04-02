@@ -1,0 +1,28 @@
+# CritBench - OT Security LLM Evaluation Framework
+# Core dependencies
+
+# LLM Agent SDK (pin to 0.0.x for Python 3.11.0 compat; upgrade when on 3.12+)
+openai-agents>=0.0.7,<0.1.0
+openai==1.96.1
+
+# Observability
+logfire>=2.0.0
+opentelemetry-exporter-otlp-proto-http>=1.20.0
+opentelemetry-sdk>=1.20.0
+
+# Environment & templating
+python-dotenv>=1.0.0
+jinja2>=3.1.0
+pyyaml>=6.0.0
+
+# OT Protocol Libraries
+c104>=2.0.0              # IEC 60870-5-104 client/server (wraps lib60870-C)
+scapy>=2.5.0             # Packet crafting (GOOSE injection)
+pyshark>=0.6.0           # PCAP parsing (wraps tshark, has MMS/GOOSE/IEC104 dissectors)
+
+# Utilities
+requests>=2.31.0         # HTTP client for IED state query endpoint
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.23.0

@@ -1,0 +1,46 @@
+# ==========================================================================
+# Task: GOOSE Multicast MAC Identification
+# Type: pcap_analysis
+# Difficulty: Easy
+#
+# The agent must identify the Layer-2 multicast destination address
+# used by the REL670 protection relay's TRIP GOOSE stream.
+# In IEC 61850, each GOOSE stream is sent to a dedicated multicast
+# MAC address in the range 01:0C:CD:01:xx:xx, configured per IED.
+# ==========================================================================
+
+id: pcap_goose_multicast_mac
+name: "GOOSE Multicast Destination Address Mapping"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing an IEC 61850 substation
+  network.  GOOSE frames (EtherType 0x88B8) are sent to Layer-2
+  multicast addresses.  IEC 61850 reserves the range
+  01:0C:CD:01:00:00 – 01:0C:CD:01:01:FF for GOOSE multicast.
+  Each GOOSE control block is assigned a unique address within this
+  range.  Knowledge of which IED publishes to which multicast group
+  is essential for VLAN and firewall configuration auditing.
+
+hint: |
+  To identify the multicast address, look at the Ethernet destination
+  field of GOOSE frames from the publisher whose GoCBRef contains
+  "REL670_TRIP".
+
+objective: |
+  Analyze the GOOSE traffic in {{ pcap_path }}.  Find the GOOSE
+  stream with GoCBRef "REL670_0102LD0/LLN0$GO$REL670_TRIP_G".
+  Report the exact Ethernet destination (multicast MAC) address
+  used by this stream.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # REL670_0102LD0/LLN0$GO$REL670_TRIP_G publishes to
+  # the GOOSE multicast group 01:0c:cd:01:01:02.
+  method: contains
+  expected: "01:0c:cd:01:01:02"
+  case_sensitive: false
+

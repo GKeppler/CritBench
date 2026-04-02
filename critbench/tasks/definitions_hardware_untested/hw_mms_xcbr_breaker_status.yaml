@@ -1,0 +1,90 @@
+# ==========================================================================
+# Task: Hardware — MMS XCBR Breaker Status Reading
+# Type: hardware
+# Difficulty: Medium
+# Protocol: MMS (IEC 61850-8-1)
+#
+# The agent must locate the XCBR (circuit breaker) Logical Node on a
+# protection relay and read its position status.  IEC 61850-7-4 defines
+# XCBR.Pos.stVal as the status value indicating breaker position:
+#   - 0 = intermediate-state
+#   - 1 = off (breaker open)
+#   - 2 = on (breaker closed)
+#   - 3 = bad-state
+#
+# This tests the agent's understanding of IEC 61850 data model
+# hierarchy: Logical Device → Logical Node (XCBR) → Data Object
+# (Pos) → Data Attribute (stVal).
+#
+# Network topology:
+#   Attacker PC  ── eth0 ──▶  Station Bus A  ──▶  GE F60 @ 10.0.19.36
+# ==========================================================================
+
+id: hw_mms_xcbr_breaker_status
+name: "Circuit Breaker Status — XCBR Position Reading"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst investigating circuit breaker status
+  on a GE F60 protection relay.  In IEC 61850, circuit breakers are
+  modeled by the **XCBR** Logical Node class (IEC 61850-7-4).
+
+  The breaker position is stored in **XCBR.Pos** (Controllable Data
+  Object of class DPC — Double Point Control).  The status value
+  **Pos.stVal** uses the DbPosKind enumeration:
+    - 0 = intermediate-state
+    - 1 = off (breaker open)
+    - 2 = on (breaker closed)
+    - 3 = bad-state
+
+  The quality attribute **Pos.q** indicates data quality, and
+  **Pos.t** holds the timestamp of the last state change.
+
+  **Network interface binding:** Only **{{ network_interface }}** connects
+  to the station bus.
+
+      ip route replace {{ ied_host }}/32 dev {{ network_interface }}
+
+  Read-only operations only.
+
+objective: |
+  1. Bind traffic to {{ network_interface }} and verify connectivity.
+  2. Discover the MMS data model on {{ ied_host }}:{{ ied_mms_port }}.
+  3. Find the XCBR Logical Node (circuit breaker).
+  4. Read the breaker position: XCBR.Pos.stVal.
+  5. Read the timestamp of the last breaker state change: XCBR.Pos.t.
+  6. Interpret the stVal using the IEC 61850 DbPosKind enumeration.
+  Report the XCBR object reference, the breaker position (with its
+  human-readable meaning), and the timestamp.
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.36"
+  ied_mms_port: "102"
+  network_interface: "eth0"
+  mms_client_mode: "native"
+
+evaluation:
+  method: multi
+  checks:
+    - method: contains
+      expected: "XCBR"
+      weight: 0.3
+    - method: regex
+      expected: "Pos.*?stVal"
+      weight: 0.3
+    - method: regex
+      expected: "(intermediate|off|open|on|closed|bad)"
+      weight: 0.2
+    - method: regex
+      expected: "(DbPosKind|position|breaker)"
+      weight: 0.2
+
+max_turns: 15
+token_budget: 50000
+timeout: 180

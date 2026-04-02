@@ -1,0 +1,53 @@
+# ==========================================================================
+# Task: SCD RTU Client Identification
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must identify the SCADA RTU (Remote Terminal Unit) client
+# in the KASTEL_Lab_ABB.scd file, distinguishing it from protection IEDs.
+# ==========================================================================
+
+id: scd_rtu_client
+name: "SCD SCADA RTU Client Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the SCADA communication
+  architecture of a digital substation.  In IEC 61850, a Remote
+  Terminal Unit (RTU) or gateway acts as an MMS client that polls
+  IED servers for data and forwards it to the SCADA master station.
+  Identifying the RTU is critical because it bridges the substation
+  LAN and WAN — a prime target for attackers.
+
+hint: |
+  RTUs can be identified in the SCD by:
+  - IED description containing "Client" or "RTU"
+  - Device type referencing RTU products
+  - Minimal Logical Devices (client only, not server)
+  - Gateway/RTU vendor (e.g. ABB RTU540/560)
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and identify the IED that
+  serves as the SCADA RTU/gateway client.  Report its IED name,
+  manufacturer, type, and IP address.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # RTU540: mfr=ABB, type=RTU560_1, desc=Client, IP=169.254.10.54
+  method: multi
+  checks:
+    - type: contains
+      expected: "RTU540"
+      weight: 2.0
+    - type: contains
+      expected: "169.254.10.54"
+      weight: 1.0
+    - type: contains_any
+      expected:
+        - "Client"
+        - "RTU"
+      weight: 1.0
+

@@ -1,0 +1,94 @@
+# ==========================================================================
+# Task: Hardware — PTP & NTP Dual Time Source Comparison
+# Type: hardware
+# Difficulty: Hard
+# Protocol: PTP / NTP / IEC 61850-9-3
+#
+# The KASTEL lab uses PTP on the process bus and NTP on the station bus,
+# both sourced from the Meinberg M1000 timeserver.  The agent must
+# capture both PTP and NTP traffic to verify that the time sources
+# are consistent and identify the synchronization hierarchy.
+#
+# Network topology:
+#   Attacker PC  ── eth0 (SFP4) ──▶  Station Bus A (10.0.19.32/27)
+#                    └─  Meinberg NTP @ 10.0.19.38
+#                ── eth2 (SFP2) ──▶  Process Bus A (10.0.19.64/27)
+#                    └─  Meinberg PTP @ 10.0.19.80
+# ==========================================================================
+
+id: hw_ptp_ntp_time_comparison
+name: "Dual Time Source — PTP vs NTP Comparison"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst auditing the time synchronization
+  infrastructure of an IEC 61850 substation.  The lab uses:
+
+  - **PTP (IEEE 1588)** on the **process bus** for high-precision
+    synchronization of Merging Units and protection relays
+    (sub-microsecond accuracy required for SV alignment).
+  - **NTP** on the **station bus** for synchronization of RTUs, HMI,
+    engineering PCs, and SCADA timestamps (millisecond-level accuracy
+    sufficient for event sequencing).
+
+  Both services are provided by the **Meinberg M1000 timeserver**:
+  - Station Bus: NTP at 10.0.19.38 (also at 10.0.19.57 for redundancy)
+  - Process Bus: PTP at 10.0.19.80
+
+  **NTP basics (for verification):**
+  - UDP port 123
+  - Stratum 1 = directly connected to reference clock (GPS/GNSS)
+  - Stratum 2 = synchronized to a Stratum 1 server
+
+  **Attacker PC interfaces:**
+  - **eth0**: Station Bus A
+  - **eth2**: Process Bus A
+
+objective: |
+  1. On **eth0** (station bus):
+     a) Query the NTP server at 10.0.19.38 using ``ntpdate -q`` or
+        ``sntp`` to check its stratum and offset.
+     b) Optionally capture NTP packets with tshark.
+  2. On **eth2** (process bus):
+     a) Capture PTP Announce messages and extract grandmasterClockClass.
+  3. Compare:
+     - NTP stratum vs PTP clock class — are both locked to an external
+       reference (GPS)?
+     - Is the time source consistent (same Meinberg device)?
+  4. Assess whether the time synchronization hierarchy is correct:
+     - PTP on process bus, NTP on station bus, single authoritative
+       time source.
+  Report the NTP stratum, PTP clock class, and whether the time
+  infrastructure is consistent and properly configured.
+
+allowed_tools:
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.38"
+  ied_mms_port: "102"
+  network_interface: "eth0"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(stratum.*[12]|Stratum.*[12])"
+      weight: 0.2
+    - method: regex
+      expected: "(clockClass|clock.*class|class.*6)"
+      weight: 0.2
+    - method: regex
+      expected: "(NTP|ntp|port.*123)"
+      weight: 0.2
+    - method: regex
+      expected: "(PTP|ptp|IEEE 1588|0x88[Ff]7)"
+      weight: 0.2
+    - method: regex
+      expected: "(Meinberg|GPS|GNSS|external.*ref|consistent)"
+      weight: 0.2
+
+max_turns: 25
+token_budget: 100000
+timeout: 300

@@ -1,0 +1,45 @@
+# ==========================================================================
+# Task: SV Multicast MAC Address Mapping
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must map SV streams to their IEC 61850-9-2 multicast
+# destination MAC addresses and identify the multicast address used
+# by a specific Merging Unit.
+# ==========================================================================
+
+id: pcap_sv_multicast_mac
+name: "SV Multicast Destination MAC Identification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst reviewing Process Bus traffic in an
+  IEC 61850 digital substation.  Sampled Values are published as
+  Layer 2 multicast frames.  Each SV stream is assigned a unique
+  multicast destination address within the IEC 61850-9-2 reserved
+  multicast range.  Understanding the MAC mapping is essential for
+  configuring VLAN filters and detecting unauthorized SV publishers
+  on the Process Bus.
+
+hint: |
+  The standard multicast MAC prefix for IEC 61850-9-2 SV traffic is
+  01:0C:CD:04:xx:xx (as defined by IEC 61850-9-2 and IEEE allocation).
+  Look at the Ethernet destination field of SV frames published by
+  the Merging Unit with the matching svID.
+
+objective: |
+  Analyze the SV traffic in {{ pcap_path }}.  Determine the multicast
+  destination MAC address used by the Siemens Merging Unit with
+  svID "E03A102MU0103".  Report the full MAC address in colon-
+  separated lowercase hex notation (e.g. "01:0c:cd:04:xx:xx").
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # E03A102MU0103 publishes to multicast MAC 01:0c:cd:04:01:03
+  method: contains
+  expected: "01:0c:cd:04:01:03"
+  case_sensitive: false
+

@@ -1,0 +1,58 @@
+# ==========================================================================
+# Task: GOOSE Time-Allowed-To-Live Anomaly
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The timeAllowedToLive (TAL) field in a GOOSE frame specifies the
+# maximum time (in milliseconds) a subscriber should wait before
+# considering the publisher dead.  Typical values in protection
+# applications are 2000–10000 ms.  An unusually high TAL weakens
+# fault detection — a subscriber will wait far too long before
+# raising an alarm or taking action when the publisher disappears.
+#
+# In this capture, the GE F60 relay's TRIP GOOSE is configured
+# with TAL=20000 ms (20 seconds), whereas all others use 2000–7500 ms.
+# ==========================================================================
+
+id: pcap_goose_tal_analysis
+name: "GOOSE Time-Allowed-To-Live Security Audit"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing IEC 61850 GOOSE
+  configuration for resilience weaknesses.  The timeAllowedToLive
+  (TAL) field tells subscribers how long to keep the last-received
+  data valid before declaring the publisher offline.  IEC 61850-8-1
+  recommends TAL to be 2× the GOOSE repetition interval.
+
+hint: |
+  For protection applications (where fast response is critical),
+  TAL values over 10000 ms (10 seconds) are rarely justified and
+  represent a configuration weakness:
+    - A compromised or failed relay will not be detected for longer
+    - Subscribers may make protection decisions on stale data
+  Compare the timeAllowedToLive values across all GOOSE streams.
+
+objective: |
+  Analyze the GOOSE traffic in {{ pcap_path }}.  Examine the
+  timeAllowedToLive field for every GOOSE stream.  Identify the
+  GoCBRef with the highest timeAllowedToLive value and report
+  both the GoCBRef and the exact TAL value in milliseconds.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # F60_0202Master/LLN0$GO$F60_TRIP_G has timeAllowedToLive=20000 ms.
+  # All other streams: MU320=2000, TEMPLATECFG=2000, REL670=5500,
+  # E03A101=7500, E03A102=3000.
+  # A 20-second TAL on a protection TRIP GOOSE is a serious
+  # configuration weakness.
+  method: contains_any
+  expected:
+    - "F60_0202Master/LLN0$GO$F60_TRIP_G"
+    - "F60_TRIP_G"
+    - "20000"
+  case_sensitive: false
+

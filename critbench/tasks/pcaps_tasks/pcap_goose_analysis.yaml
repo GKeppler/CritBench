@@ -1,0 +1,40 @@
+# ==========================================================================
+# Task: PCAP GOOSE Analysis
+# Type: pcap_analysis
+#
+# The agent is given a PCAP file containing GOOSE traffic from an
+# IEC 61850 substation network. It must identify the GOOSE control
+# block reference that carries a breaker trip signal.
+# ==========================================================================
+
+id: pcap_goose_analysis
+name: "GOOSE Control Block Identification"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst specializing in IEC 61850 substation
+  automation protocols.  You have access to tools for parsing PCAP files
+  and extracting GOOSE frames.  Analyze the provided capture and answer
+  the objective precisely.
+
+objective: |
+  Analyze the PCAP file at {{ pcap_path }} and identify the GOOSE
+  Control Block Reference (GoCBRef) that carries the breaker trip
+  indication (XCBR status change).  Report the exact GoCBRef string.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # The PCAP contains several GoCBRefs.  The one with "TRIP" in its name
+  # and the highest stNum transitions (21→22→23) is the REL670 protection
+  # relay's trip GOOSE.  Accept either the REL670 TRIP or the Siemens
+  # E03A101_PROT control dataset (also shows state change 15→16→17).
+  method: contains_any
+  expected:
+    - "REL670_0102LD0/LLN0$GO$REL670_TRIP_G"
+    - "E03A101_PROT/LLN0$GO$Control_DataSet"
+    - "F60_0202Master/LLN0$GO$F60_TRIP_G"
+  case_sensitive: false
+

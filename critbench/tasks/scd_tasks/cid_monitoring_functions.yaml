@@ -1,0 +1,42 @@
+# ==========================================================================
+# Task: CID Monitoring LD Function Mapping
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must identify and categorize the functions in the MON
+# (Monitoring) Logical Device of the ABB REL670 CID.
+# ==========================================================================
+
+id: cid_monitoring_functions
+name: "CID Monitoring Logical Device Function Analysis"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the monitoring capabilities
+  of an ABB REL670 relay from its CID file.  The "MON" Logical Device
+  reveals what monitoring and diagnostics are available — impacting
+  both operational visibility and security monitoring capabilities.
+
+hint: |
+  Key LN classes in monitoring LDs: MMXU (Measurement), MMXN
+  (Non-phase measurement), MSQI (Sequence & Imbalance), MMTR
+  (Metering), RDRE (Disturbance Recorder), RFLO (Fault Locator),
+  GAPC (Generic Automatic Process Control), SCBR (CB Supervision).
+
+objective: |
+  Parse the CID file at {{ scl_path }} and count the total number of
+  Logical Nodes in the "MON" Logical Device (excluding LLN0).
+  Report the count as a single integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # MON LD has 20 LNs: DRPRDRE1, LMBRFLO1, TMAGAPC1, TMAGAPC2,
+  # TMAGAPC5, SSCBR1-3, SSIMG1, SSIML1, CMMXU1, CMSQI1, CVMMXN1,
+  # VMMXU1, VNMMXU1-3, VMSQI1, ETPMMTR1, SP16GAPC1
+  method: exact_match
+  expected: "20"
+  case_sensitive: false
+

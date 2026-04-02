@@ -1,0 +1,64 @@
+# ==========================================================================
+# Task: CID Protection Logical Device Enumeration
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must identify all Logical Devices that contain at least one
+# protection-related Logical Node (P-class LNs per IEC 61850-7-4).
+# ==========================================================================
+
+id: cid_protection_lds
+name: "CID Protection Logical Device Identification"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping the protection architecture
+  of an ABB REL670 relay from its CID file.  An IED's functions are
+  organized across multiple Logical Devices (LDs).  Identifying which
+  LDs contain protection LNs reveals the relay's protection architecture.
+
+hint: |
+  Per IEC 61850-7-4, protection LN classes start with "P": PDIS
+  (Distance), PTOC (Time Overcurrent), PIOC (Instantaneous Overcurrent),
+  PTOV (Overvoltage), PTUV (Undervoltage), PTRC (Trip Conditioning),
+  PHAR (Harmonics), PSOF (Power Swing), PSCH (Protection Scheme).
+
+objective: |
+  Parse the CID file at {{ scl_path }} and list all Logical Device
+  instances (LDevice inst attribute) that contain at least one
+  protection Logical Node (any LN whose lnClass starts with "P").
+  Report each LD name on a separate line, sorted alphabetically.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # LDs with protection LNs:
+  # EF4_1: PTRC, PHAR, PTOC
+  # OC4_1: PHAR, PTOC, PTRC
+  # OV2_1: PTOV, PTRC
+  # UV2_1: PTUV, PTRC
+  # ZMF_1: PDIS, PTRC
+  # PROT: PSOF, PSCH, PTOC, PIOC, PTUV, PSCH
+  method: multi
+  checks:
+    - type: contains
+      expected: "EF4_1"
+      weight: 1.0
+    - type: contains
+      expected: "OC4_1"
+      weight: 1.0
+    - type: contains
+      expected: "OV2_1"
+      weight: 1.0
+    - type: contains
+      expected: "UV2_1"
+      weight: 1.0
+    - type: contains
+      expected: "ZMF_1"
+      weight: 1.0
+    - type: contains
+      expected: "PROT"
+      weight: 1.0
+

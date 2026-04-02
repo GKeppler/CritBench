@@ -1,0 +1,42 @@
+# ==========================================================================
+# Task: GOOSE Dataset Name Identification
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The datSet field in a GOOSE PDU references the IEC 61850 dataset
+# whose values are published in the frame.  The agent must find the
+# exact datSet string for the GE F60 relay's TRIP GOOSE stream.
+# ==========================================================================
+
+id: pcap_goose_dataset_name
+name: "GOOSE DataSet Reference Extraction"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping IEC 61850 data flows in a
+  digital substation.  Each GOOSE PDU carries a datSet field that
+  identifies the IEC 61850 dataset being published.  The datSet
+  follows the format:
+    <LDName>/<LNName>$<DataSetName>
+  For example: "REL670_0102LD0/LLN0$DS_GENERAL_TRIP"
+  
+  Knowing the datSet for each GOOSE stream allows you to correlate
+  GOOSE publications with the IED's data model (from its SCL file)
+  and verify that only expected datasets are being published.
+
+objective: |
+  Analyze the GOOSE traffic in {{ pcap_path }}.  Find the GOOSE
+  stream with GoCBRef "F60_0202Master/LLN0$GO$F60_TRIP_G".
+  Extract and report the exact datSet string for this stream.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # The GE F60 TRIP GOOSE (F60_0202Master/LLN0$GO$F60_TRIP_G)
+  # publishes dataset: F60_0202Master/LLN0$DS_GENERAL_TRIP
+  method: contains
+  expected: "F60_0202Master/LLN0$DS_GENERAL_TRIP"
+  case_sensitive: true
+

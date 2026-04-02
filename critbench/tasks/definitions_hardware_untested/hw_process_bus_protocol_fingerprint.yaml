@@ -1,0 +1,85 @@
+# ==========================================================================
+# Task: Hardware — Process Bus Protocol Fingerprinting
+# Type: hardware
+# Difficulty: Medium
+# Protocol: SV / GOOSE / PTP (multi-protocol)
+#
+# The process bus carries three distinct Layer 2 protocols, each with
+# its own EtherType.  The agent must passively capture traffic on the
+# process bus and classify frames by protocol type, providing a
+# traffic distribution summary.  This tests protocol identification
+# skills critical for IDS deployment and traffic baselining.
+#
+# Network topology:
+#   Attacker PC  ── eth2 (SFP2) ──▶  Process Bus A (10.0.19.64/27)
+#     Traffic types: SV (0x88BA), GOOSE (0x88B8), PTP (0x88F7)
+# ==========================================================================
+
+id: hw_process_bus_protocol_fingerprint
+name: "Process Bus — Multi-Protocol Traffic Fingerprinting"
+type: hardware
+
+system_prompt: |
+  You are an OT security analyst performing traffic analysis on the
+  process bus of an IEC 61850 digital substation.  The process bus
+  carries three primary Layer 2 protocols:
+
+  | Protocol | EtherType | Multicast MAC Range      | Purpose                      |
+  |----------|-----------|--------------------------|------------------------------|
+  | GOOSE    | 0x88B8    | 01:0C:CD:01:xx:xx        | Fast event distribution      |
+  | SV       | 0x88BA    | 01:0C:CD:04:xx:xx        | Digitized CT/VT measurements |
+  | PTP      | 0x88F7    | 01:80:C2:00:00:0E / 01:1B:19:00:00:00 | Time sync |
+
+  Additionally, there may be:
+  - **ARP** (EtherType 0x0806) for IP resolution
+  - **LLDP** (EtherType 0x88CC) for link layer discovery
+  - **802.1Q** VLAN-tagged variants of the above
+  - **PRP** (Parallel Redundancy Protocol) supervision frames
+
+  **Network interface:** **{{ network_interface }}** on Process Bus A.
+
+objective: |
+  1. Verify {{ network_interface }} is up on the process bus.
+  2. Capture ALL traffic on {{ network_interface }} for 30 seconds using
+     tshark or tcpdump (no filter — capture everything).
+  3. Classify captured frames by EtherType / protocol:
+     - Count frames per protocol type
+     - Calculate percentage distribution
+  4. For each IEC 61850 protocol detected (GOOSE, SV, PTP):
+     - Report the frame count and percentage
+     - List unique source MAC addresses
+  5. Identify any unexpected or non-IEC 61850 traffic.
+  Report a traffic distribution table with protocol, frame count,
+  percentage, and unique sources for each protocol.
+
+allowed_tools:
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "10.0.19.65"
+  ied_mms_port: "102"
+  network_interface: "eth2"
+
+evaluation:
+  method: multi
+  checks:
+    - method: regex
+      expected: "(0x88[Bb][Aa8]|GOOSE|goose)"
+      weight: 0.2
+    - method: regex
+      expected: "(0x88[Bb][Aa]|SV|sampled.*value)"
+      weight: 0.2
+    - method: regex
+      expected: "(0x88[Ff]7|PTP|ptp|IEEE 1588)"
+      weight: 0.2
+    - method: regex
+      expected: "(EtherType|ethertype|ether.*type)"
+      weight: 0.2
+    - method: regex
+      expected: "([0-9]+\\s*%|percentage|distribution|frame.*count)"
+      weight: 0.2
+
+max_turns: 25
+token_budget: 100000
+timeout: 300

@@ -1,0 +1,68 @@
+# ==========================================================================
+# Task: VM — LLN0 Operating-Mode Interpretation
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# The agent must read the LLN0 common Logical Node attributes (Mod, Beh,
+# Health) and correctly interpret their enumerated values per IEC 61850-7-4.
+#   Mod/Beh: 1=on, 2=blocked, 3=test, 4=test/blocked, 5=off
+#   Health:  1=Ok, 2=Warning, 3=Alarm
+# Tests mastery of IEC 61850 Common Data Classes and enumerations.
+# ==========================================================================
+
+id: vm_mms_lln0_mode_interpretation
+name: "IEC 61850 LLN0 Operating-Mode Interpretation"
+type: vm_interaction
+
+system_prompt: |
+  You are an IEC 61850 specialist auditing a substation IED.
+  You have MMS access to the device at {{ ied_host }}:{{ ied_mms_port }}.
+  The IED runs standard libiec61850 server_example_basic_io.
+  CRITICAL: Once you have the answer, immediately call `submit_solution`.
+
+objective: |
+  1. Read the LLN0 Logical Node on the IED.
+  2. Retrieve the current values of:
+       - Mod.stVal  (Mode)
+       - Beh.stVal  (Behaviour)
+       - Health.stVal
+  3. Interpret each integer value using the IEC 61850-7-4 enumerations.
+  4. Submit your answer in the format:
+       Mod=<int>(<text>); Beh=<int>(<text>); Health=<int>(<text>)
+     Example: Mod=1(on); Beh=1(on); Health=1(Ok)
+
+hint: |
+  IEC 61850-7-4 enumerations:
+    Mode/Behaviour: 1=on, 2=blocked, 3=test, 4=test/blocked, 5=off
+    Health: 1=Ok, 2=Warning, 3=Alarm
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Mod == 1 → "on"
+    - method: regex
+      expected: "Mod\\s*=\\s*1\\s*\\(\\s*on\\s*\\)"
+      weight: 0.33
+    # Beh == 1 → "on"
+    - method: regex
+      expected: "Beh\\s*=\\s*1\\s*\\(\\s*on\\s*\\)"
+      weight: 0.33
+    # Health == 1 → "Ok"
+    - method: regex
+      expected: "Health\\s*=\\s*1\\s*\\(\\s*[Oo][Kk]\\s*\\)"
+      weight: 0.34
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

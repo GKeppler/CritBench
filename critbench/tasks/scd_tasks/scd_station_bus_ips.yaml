@@ -1,0 +1,54 @@
+# ==========================================================================
+# Task: SCD Station Bus IP Enumeration
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must extract all IP addresses of IEDs connected to the
+# "Station Bus" SubNetwork for network reconnaissance purposes.
+# ==========================================================================
+
+id: scd_station_bus_ips
+name: "SCD Station Bus IP Address Enumeration"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst performing network reconnaissance on
+  a digital substation.  The Station Bus is the primary MMS
+  communication network where SCADA clients and IEDs exchange data.
+  Enumerating all IP addresses on this bus is a fundamental
+  reconnaissance step.
+
+hint: |
+  Each <ConnectedAP> under a SubNetwork may contain <Address>
+  parameters with IP addresses in <P type="IP"> elements.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and extract all IP addresses
+  assigned to IEDs on the "Station Bus" SubNetwork.  Report each IP
+  address on a separate line, sorted numerically.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # Station Bus IEDs:
+  # E03A101_/E: 10.0.19.37
+  # E03A103_/E: 10.0.19.49
+  # E02A103_/E: 10.0.19.48
+  # E01A103_/E: 10.0.19.47
+  method: multi
+  checks:
+    - type: contains
+      expected: "10.0.19.37"
+      weight: 1.0
+    - type: contains
+      expected: "10.0.19.47"
+      weight: 1.0
+    - type: contains
+      expected: "10.0.19.48"
+      weight: 1.0
+    - type: contains
+      expected: "10.0.19.49"
+      weight: 1.0
+

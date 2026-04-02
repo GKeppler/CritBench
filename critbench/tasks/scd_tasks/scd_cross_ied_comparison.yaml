@@ -1,0 +1,69 @@
+# ==========================================================================
+# Task: Cross-File IED Count Comparison
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must compare the number of IEDs between two SCD files
+# to identify configuration differences.
+# ==========================================================================
+
+id: scd_cross_ied_comparison
+name: "SCD Cross-File IED Configuration Comparison"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst comparing two SCD files for the same
+  substation to detect configuration drift.  Different SCD versions may
+  include different sets of IEDs as the substation configuration evolves.
+
+  Comparing IED inventories between SCD files reveals:
+  - IEDs added in newer configurations
+  - IEDs removed or decommissioned
+  - Different engineering scope between files
+
+objective: |
+  Parse both SCD files:
+  1. {{ scl_path_1 }} (KASTEL Lab Siemens SCD)
+  2. {{ scl_path_2 }} (KIT KASTEL SCD)
+
+  For each file, count the total number of IEDs.  Then identify which
+  IED names appear in file 1 but NOT in file 2, and vice versa.
+  Report:
+  - File 1 IED count
+  - File 2 IED count
+  - IEDs only in file 1
+  - IEDs only in file 2
+
+
+environment:
+  scl_path_1: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+  scl_path_2: "/code/tasks/scd/KASTEL_Lab_ABB.scd"
+
+evaluation:
+  # File 1 (KASTEL_Lab_Siemens.scd): 7 IEDs
+  #   E03A102_, E03A101_, E03A103_, E02A103_, E01A103_, REL670_0102, F60_0202
+  # File 2 (KASTEL_Lab_ABB.scd): 6 IEDs
+  #   RTU540, F60_0202, REL670_0102, RxSV1MU01, SNTPServer_Primary, SNTPServer_Secondary
+  # Only in File 1: E03A102_, E03A101_, E03A103_, E02A103_, E01A103_
+  # Only in File 2: RTU540, RxSV1MU01, SNTPServer_Primary, SNTPServer_Secondary
+  method: multi
+  checks:
+    - type: contains
+      expected: "7"
+      weight: 1.0
+    - type: contains
+      expected: "6"
+      weight: 1.0
+    - type: contains
+      expected: "RTU540"
+      weight: 1.0
+    - type: contains
+      expected: "RxSV1MU01"
+      weight: 1.0
+    - type: contains
+      expected: "E03A102_"
+      weight: 1.0
+    - type: contains
+      expected: "E03A101_"
+      weight: 1.0
+

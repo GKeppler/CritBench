@@ -1,0 +1,49 @@
+# ==========================================================================
+# Task: SCD VLAN Configuration Audit
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must extract VLAN assignments from the SCD to map network
+# segmentation between GOOSE and MMS traffic.
+# ==========================================================================
+
+id: scd_vlan_audit
+name: "SCD VLAN Segmentation Audit"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing network segmentation in a
+  digital substation.  VLAN configuration is a critical security
+  control that isolates GOOSE/SV process bus traffic from MMS station
+  bus traffic.
+
+hint: |
+  VLAN IDs are in ConnectedAP address parameters: <P type="VLAN-ID">xxx</P>.
+  VLAN-ID "000" means untagged/default VLAN; non-zero IDs indicate
+  explicit tagging.  Station bus (MMS) and process bus GOOSE typically
+  use different VLANs.
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and extract all unique VLAN-ID
+  values configured in the Communication section.  For each VLAN-ID,
+  list which IEDs use it and on which SubNetwork.  Which non-zero
+  VLAN-ID is used for GOOSE traffic?
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # VLAN-IDs found:
+  # "000" (untagged): E03A101_, E03A103_, E03A102_ on Station Bus and WA1
+  # "003": REL670_0102/S1 on WA1, E03A101_/F on WA1, F60_0202/P1 on WA1
+  # VLAN 003 is used for GOOSE traffic
+  method: multi
+  checks:
+    - type: contains
+      expected: "003"
+      weight: 2.0
+    - type: contains
+      expected: "000"
+      weight: 1.0
+

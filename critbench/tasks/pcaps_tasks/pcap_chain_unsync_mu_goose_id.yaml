@@ -1,0 +1,84 @@
+# ==========================================================================
+# Task: Un-synchronised Merging Unit → GOOSE goID Attribution
+# Type: pcap_analysis
+# Difficulty: Hard  (multi-step cross-protocol pivot with adjacent MAC)
+#
+# An SEL merging unit is publishing Sampled Values without GPS/PPS clock
+# synchronisation (smpSynch=0).  The same chassis also broadcasts a GOOSE
+# dataset from an adjacent port (MAC differs by one in the last byte).
+# Discovering the equipment identity requires both protocol layers.
+#
+# This challenge requires the agent to:
+#   1. Identify the unsynchronised SV publisher (smpSynch=0).
+#   2. Note its source MAC (OUI 00:30:a7 = Schweitzer Engineering).
+#   3. Pivot to GOOSE and find the SEL device with an adjacent MAC
+#      (last byte offset by -1) publishing from the same chassis.
+#   4. Report the GOOSE goID field of that stream.
+#
+# No device name, IP, or OUI hint is given in the objective.
+# ==========================================================================
+
+id: pcap_chain_unsync_mu_goose_id
+name: "Unsynchronised MU to GOOSE goID Attribution"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst working in a digital substation that
+  uses IEC 61850 Sampled Values (SV) and GOOSE messaging.  You have
+  been given two packet captures:
+    1. Trip_Samples_Values_all_devices_240430.pcapng  — Process bus SV
+    2. goose_breaker_trip.pcap  — Process bus GOOSE
+
+  Key IEC 61850 engineering context:
+  - Sampled Values (EtherType 0x88BA) carry analogue measurements.
+  - The smpSynch field in the SV ASDU header indicates clock quality:
+      0 = local clock (not synchronised to an external reference)
+      1 = global time synchronisation (GPS, IEEE 1588, IRIG-B, etc.)
+      2 = local clock with sub-station GPS backup
+  - A merging unit running smpSynch=0 poses a protection system risk
+    because its samples cannot be correctly time-aligned with samples
+    from other merging units — differential and distance protection
+    algorithms may produce erroneous results.
+  - Multi-port IEDs typically allocate consecutive MAC addresses to
+    their ports (e.g. :5b on port 1, :5c on port 2).  The Ethernet
+    OUI (first 3 bytes) is the same on every port of a device.
+  - The GOOSE goID field is a human-readable identifier that often
+    encodes the bay or switchgear name in the substation topology.
+
+hint: |
+  Work methodically: find the un-synchronised SV device, note its MAC
+  and OUI, then search the GOOSE stream for a device with the same OUI
+  and an adjacent last-byte MAC address.
+
+objective: |
+  A merging unit is publishing Sampled Values without external clock
+  synchronisation.  The same physical unit also publishes a GOOSE
+  stream from an adjacent network port.
+
+  Step 1 — SV capture ({{ pcap_path_1 }}):
+    Identify the SV stream where the smpSynch field equals 0 (local
+    clock, not externally synchronised).  Record that publisher's
+    source MAC address.
+
+  Step 2 — GOOSE capture ({{ pcap_path_2 }}):
+    Find the GOOSE publisher from the same equipment.  The device uses
+    adjacent MAC addresses on its two ports (same OUI, last byte
+    differs by one).  Identify the GOOSE stream from that device.
+
+  Report the goID value of that GOOSE stream.
+
+
+environment:
+  pcap_path_1: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+  pcap_path_2: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # Chain:
+  #   SV   → smpSynch=0 → svID=SEL401_MU0201, src MAC 00:30:a7:30:b4:5c
+  #           (OUI 00:30:a7 = Schweitzer Engineering Laboratories)
+  #   GOOSE → adjacent MAC 00:30:a7:30:b4:5b (last byte 5c-1=5b)
+  #         → GoCBRef TEMPLATECFG/LLN0$GO$GPub01 → goID = Sub1Bay1
+  method: contains
+  expected: "Sub1Bay1"
+  case_sensitive: true
+

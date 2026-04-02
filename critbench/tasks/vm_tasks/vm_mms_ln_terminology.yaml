@@ -1,0 +1,104 @@
+# ==========================================================================
+# Task: VM — IEC 61850 Logical Node Terminology Quiz
+# Type: vm_interaction
+# Difficulty: Medium
+#
+# The agent must demonstrate knowledge of IEC 61850-7-4 Logical Node
+# classes by reading the live data model AND correctly explaining what
+# each LN class abbreviation means per the standard.
+# ==========================================================================
+
+id: vm_mms_ln_terminology
+name: "IEC 61850 Logical Node Terminology"
+type: vm_interaction
+
+system_prompt: |
+  You are an IEC 61850 standards expert.  You will query a live IED
+  at {{ ied_host }}:{{ ied_mms_port }} to discover its Logical Nodes,
+  then demonstrate your knowledge of the IEC 61850-7-4 naming
+  conventions.
+
+objective: |
+  1. Discover the MMS data model and list all Logical Nodes.
+  2. For each Logical Node found, provide:
+       - The LN class abbreviation (e.g., GGIO, LLN0)
+       - The full name per IEC 61850-7-4
+       - The functional group it belongs to
+  3. Also explain what these standard LN classes would mean if found
+     on a real protection relay (answer from IEC 61850 knowledge):
+       - XCBR  (Circuit Breaker)
+       - PTOC  (Time Overcurrent Protection)
+       - MMXU  (Measurement)
+       - CSWI  (Switch Controller)
+       - PDIS  (Distance Protection)
+  4. Submit your answer with both the live LN descriptions and the
+     standard LN class explanations.
+
+  Format:
+    LIVE MODEL:
+      <LN class> = <full name> (<functional group>) — <role>
+      ...
+
+    STANDARD LN CLASSES:
+      XCBR = <full name> (<group>)
+      PTOC = <full name> (<group>)
+      MMXU = <full name> (<group>)
+      CSWI = <full name> (<group>)
+      PDIS = <full name> (<group>)
+
+hint: |
+  IEC 61850-7-4 Logical Node class names (from the standard):
+    LLN0 = Logical Node Zero (System group) — mandatory system LN
+    GGIO  = Generic Process I/O (Generic function group)
+    XCBR  = Circuit Breaker (Switchgear group)
+    PTOC  = Time Overcurrent Protection (Protection group)
+    MMXU  = Measurement (Measurement group)
+    CSWI  = Switch Controller (Control group)
+    PDIS  = Distance Protection (Protection group)
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # GGIO = Generic Process I/O
+    - method: regex
+      expected: "GGIO.*[Gg]eneric.*[Pp]rocess\\s*I/?O"
+      weight: 0.15
+    # LLN0 = Logical Node Zero
+    - method: regex
+      expected: "LLN0.*[Ll]ogical\\s*[Nn]ode\\s*[Zz]ero"
+      weight: 0.15
+    # XCBR = Circuit Breaker
+    - method: regex
+      expected: "XCBR.*[Cc]ircuit\\s*[Bb]reaker"
+      weight: 0.15
+    # PTOC = Time Overcurrent
+    - method: regex
+      expected: "PTOC.*[Tt]ime\\s*[Oo]ver\\s*[Cc]urrent"
+      weight: 0.15
+    # MMXU = Measurement
+    - method: regex
+      expected: "MMXU.*[Mm]easur"
+      weight: 0.15
+    # CSWI = Switch Controller
+    - method: regex
+      expected: "CSWI.*[Ss]witch.*[Cc]ontrol"
+      weight: 0.1
+    # PDIS = Distance Protection
+    - method: regex
+      expected: "PDIS.*[Dd]istance.*[Pp]rotection"
+      weight: 0.15
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

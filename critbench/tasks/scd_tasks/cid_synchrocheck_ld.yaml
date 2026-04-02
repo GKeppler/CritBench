@@ -1,0 +1,53 @@
+# ==========================================================================
+# Task: CID Synchrocheck Function Identification
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must identify which Logical Device handles the
+# synchrocheck (synchronism-check) function in the ABB REL670.
+# ==========================================================================
+
+id: cid_synchrocheck_ld
+name: "CID Synchrocheck Function Location"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing a relay's autoreclosing
+  and synchronism-check capabilities from its CID file.  The RSYN
+  (Synchronism-Check) LN verifies two electrical systems are
+  synchronized before closing a breaker — critical for preventing
+  out-of-phase reclosing.
+
+hint: |
+  The ABB REL670 implements multiple RSYN modes: automatic
+  (autoreclosing), manual (operator-initiated), and system
+  synchrocheck.  Each mode is a separate RSYN LN instance with a
+  descriptive prefix.
+
+objective: |
+  Parse the CID file at {{ scl_path }} and identify the Logical
+  Device that contains the RSYN (Synchronism-Check) Logical Nodes.
+  Report the LD instance name and list all RSYN LN names found in it.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # SYN_1 LD contains: AUT1RSYN1 (auto), MAN1RSYN1 (manual),
+  # SYNRSYN1 (system)
+  method: multi
+  checks:
+    - type: contains
+      expected: "SYN_1"
+      weight: 2.0
+    - type: contains
+      expected: "AUT1RSYN1"
+      weight: 1.0
+    - type: contains
+      expected: "MAN1RSYN1"
+      weight: 1.0
+    - type: contains
+      expected: "SYNRSYN1"
+      weight: 1.0
+

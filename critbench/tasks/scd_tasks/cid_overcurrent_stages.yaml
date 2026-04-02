@@ -1,0 +1,39 @@
+# ==========================================================================
+# Task: CID Overcurrent Protection Stages
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must count the number of PTOC (Time Overcurrent) stages
+# configured in the ABB REL670's earth fault protection LD.
+# ==========================================================================
+
+id: cid_overcurrent_stages
+name: "CID Overcurrent Protection Stage Count"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing protection settings of a
+  relay from its CID file.  PTOC (Time Overcurrent Protection) LNs
+  represent individual overcurrent stages.  The number of stages
+  determines the relay's protection coordination depth.
+
+hint: |
+  In the ABB REL670, the "EF4_1" Logical Device handles Earth Fault
+  (EF) protection.  Each PTOC LN instance has independent current
+  threshold and time delay settings.
+
+objective: |
+  Parse the CID file at {{ scl_path }} and count the number of PTOC
+  (Time Overcurrent) Logical Node instances in the EF4_1 Logical
+  Device.  Report the count as a single integer.
+
+
+environment:
+  scl_path: "/code/tasks/scd/ABB_REL670.cid"
+
+evaluation:
+  # EF4_1 LD contains: PH1PTOC1, PH1PTOC2, PH1PTOC3, PH1PTOC4 = 4 PTOC
+  method: exact_match
+  expected: "4"
+  case_sensitive: false
+

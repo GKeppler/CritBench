@@ -1,0 +1,53 @@
+# ==========================================================================
+# Task: MMS Dataset & Functional Constraint Identification
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must identify the IEC 61850 datasets configured in the
+# MMS data model and explain the Functional Constraint (FC) used
+# by the measurement (MX) reporting dataset.
+# ==========================================================================
+
+id: pcap_mms_dataset_fc
+name: "MMS Dataset Functional Constraint Analysis"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst reviewing an IEC 61850 MMS capture.
+  In IEC 61850, data attributes are organized under Functional
+  Constraints (FCs) such as:
+    - ST = Status
+    - MX = Measurement (analog values)
+    - CO = Control
+    - CF = Configuration
+    - DC = Description
+    - SP = Setting/Parameter
+  Datasets group data attributes for reporting via Report Control
+  Blocks (RCBs) that deliver data changes to subscribed clients.
+
+hint: |
+  An Unbuffered Report Control Block (URCB, prefix $RP$ in MMS
+  object references) sends reports on demand, while a Buffered
+  RCB (BRCB, prefix $BR$) queues changes in a buffer.
+
+objective: |
+  Analyze the MMS traffic in {{ pcap_path }}.  There is an Unbuffered
+  Report Control Block (URCB) configured on the IED.  Determine the
+  name of the dataset that this URCB is associated with.  The dataset
+  name typically follows the pattern LLN0$DataSetName.
+  Report the dataset name exactly as it appears in the MMS references.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/MMS_Traffic_09-02-2024_12-58.pcapng"
+
+evaluation:
+  # The URCB is urcbMeasFlt01 which reports dataset LLN0$MeasFlt.
+  # This dataset contains measurement and fault data (MX FC
+  # attributes from CMMXU1, VMMXU1, etc.).
+  method: contains_any
+  expected:
+    - "LLN0$MeasFlt"
+    - "MeasFlt"
+  case_sensitive: true
+

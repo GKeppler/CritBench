@@ -1,0 +1,73 @@
+# ==========================================================================
+# Task: VM — MMS Data-Model Discovery
+# Type: vm_interaction
+# Difficulty: Easy
+#
+# The agent must discover the IEC 61850 object hierarchy:
+# Logical Device → Logical Nodes → Data Objects.
+# Tests understanding of the IEC 61850-7-2 information model.
+# ==========================================================================
+
+id: vm_mms_model_discovery
+name: "IEC 61850 MMS Data-Model Discovery"
+type: vm_interaction
+
+system_prompt: |
+  You are an OT security analyst performing reconnaissance on a digital
+  substation.  You have MMS access to an IED at {{ ied_host }}:{{ ied_mms_port }}.
+  CRITICAL: Once you have gathered the required information, immediately
+  call `submit_solution` with a structured answer.
+
+objective: |
+  1. Use the MMS tools to discover all Logical Devices on the server.
+  2. For each Logical Device, enumerate its Logical Nodes.
+  3. For the GGIO1 Logical Node, list every Data Object name.
+  4. Submit your answer in the format:
+       LD=<LD name>; LNs=<comma-separated LN names>; GGIO1_DOs=<comma-separated DO names>
+     Example: LD=myLD; LNs=LLN0,XCBR1; GGIO1_DOs=Pos,Op
+
+hint: |
+  The IED runs a standard libiec61850 server_example_basic_io.
+  The MMS namespace hierarchy is: Server → LogicalDevice → LogicalNode →
+  DataObject.  Use list_mms_model to walk the full tree.
+
+allowed_tools:
+  - list_mms_model
+  - read_mms_variable
+  - run_command
+  - submit_solution
+
+environment:
+  ied_host: "ied-server"
+  ied_mms_port: "102"
+  ied_state_api: "http://ied-server:8080"
+
+evaluation:
+  method: multi
+  checks:
+    # Must identify the Logical Device name
+    - method: contains
+      expected: "simpleIOGenericIO"
+      weight: 0.25
+    # Must list both Logical Nodes
+    - method: contains
+      expected: "LLN0"
+      weight: 0.15
+    - method: contains
+      expected: "GGIO1"
+      weight: 0.15
+    # Must enumerate SPCSO and AnIn data objects
+    - method: contains
+      expected: "SPCSO1"
+      weight: 0.15
+    - method: contains
+      expected: "AnIn1"
+      weight: 0.15
+    # Must include indicators
+    - method: contains
+      expected: "Ind1"
+      weight: 0.15
+
+max_turns: 15
+token_budget: 60000
+timeout: 240

@@ -1,0 +1,41 @@
+# ==========================================================================
+# Task: SCD GOOSE Control Block AppID Extraction
+# Type: scl_analysis
+# Difficulty: Medium
+#
+# The agent must extract the GOOSE application identifier (appID) for
+# the REL670 protection relay's TRIP GOOSE from the SCD file.
+# ==========================================================================
+
+id: scd_goose_appid
+name: "SCD GOOSE AppID Extraction"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst mapping GOOSE data flows in a digital
+  substation.  Each GOOSE Control Block has an application-level
+  identifier that uniquely identifies the GOOSE stream.
+
+hint: |
+  The 'appID' attribute of a <GSEControl> element is the logical
+  application identifier string.  Note: this is different from the
+  numeric APPID in the Communication section:
+  - GSEControl appID = logical identifier (e.g. "REL670_0102LD0/LLN0.REL670_TRIP_G")
+  - PhyComm APPID = 2-byte Ethernet-level identifier (e.g. "0001")
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and find the GOOSE Control Block
+  named "REL670_TRIP_G".  Report the exact 'appID' attribute value of
+  this GSEControl element.
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # REL670_0102 GSEControl: name=REL670_TRIP_G,
+  # appID=REL670_0102LD0/LLN0.REL670_TRIP_G
+  method: contains
+  expected: "REL670_0102LD0/LLN0.REL670_TRIP_G"
+  case_sensitive: true
+

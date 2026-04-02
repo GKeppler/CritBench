@@ -1,0 +1,50 @@
+# ==========================================================================
+# Task: SCD Sampled Values Stream Configuration
+# Type: scl_analysis
+# Difficulty: Hard
+#
+# The agent must extract the Sampled Values (SV) stream parameters from
+# the SCD file including the smvID, sample rate, and number of ASDUs.
+# ==========================================================================
+
+id: scd_sv_stream_config
+name: "SCD Sampled Values Stream Configuration"
+type: scl_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing the process bus configuration
+  of a digital substation.  SV stream parameters are critical for
+  validating that the process bus operates within IEC 61850-9-2LE
+  (Lite Edition) specifications.
+
+hint: |
+  IEC 61850-9-2 SV streams are configured via <SampledValueControl>
+  elements in the Merging Unit's Logical Device.  Key attributes:
+  - smvID: stream identifier
+  - smpRate: sample rate (80 for protection, 256 for metering)
+  - nofASDU: number of ASDUs per Ethernet frame
+
+objective: |
+  Parse the SCD file at {{ scl_path }} and find the SampledValueControl
+  element.  Report the following parameters separated by commas:
+  smvID, smpRate, nofASDU
+  (e.g. "MU01_SV, 80, 1")
+
+
+environment:
+  scl_path: "/code/tasks/scd/KASTEL_Lab_Siemens.scd"
+
+evaluation:
+  # E03A102_ SV: smvID=E03A102MU0103, smpRate=256, nofASDU=8
+  method: multi
+  checks:
+    - type: contains
+      expected: "E03A102MU0103"
+      weight: 2.0
+    - type: contains
+      expected: "256"
+      weight: 1.0
+    - type: contains
+      expected: "8"
+      weight: 1.0
+

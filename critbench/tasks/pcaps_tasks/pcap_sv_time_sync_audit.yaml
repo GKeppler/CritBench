@@ -1,0 +1,55 @@
+# ==========================================================================
+# Task: SV Time Synchronization Audit
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The agent must analyze the smpSynch field across SV streams to
+# find the Merging Unit that is NOT time-synchronized.  This is a
+# critical finding for digital substation security — an unsynchronized
+# MU could indicate PTP/IEEE 1588 failure or a time-spoofing attack.
+# ==========================================================================
+
+id: pcap_sv_time_sync_audit
+name: "SV Merging Unit Synchronization Audit"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst auditing the Process Bus of an
+  IEC 61850 digital substation.  Sampled Values (SV) frames carry a
+  field called smpSynch (tag 0x85 in the SV ASDU) that indicates
+  the time synchronization status of the Merging Unit:
+    - 0 = NOT synchronized (no time source)
+    - 1 = LOCAL synchronization (e.g. IRIG-B, 1PPS)
+    - 2 = GLOBAL synchronization (e.g. IEEE 1588 PTP, GPS)
+  An unsynchronized Merging Unit is a serious concern because
+  protection relays rely on aligned samples for differential
+  protection and synchrophasor applications.
+  In digital substations, time synchronization typically uses
+  IEEE 1588 Precision Time Protocol (PTP) per IEC 61850-9-3.
+
+hint: |
+  This capture contains tens of thousands of high-rate SV packets.  The
+  smpSynch value is constant per stream — a sample of 50 packets is
+  sufficient to check all streams.  Use a SMALL sample to keep output
+  manageable.
+  Recommended tshark command:
+    tshark -r <pcap> -T fields -e sv.svID -e sv.smpSynch -c 50 2>/dev/null
+  Or use parse_pcap with max_packets=50.
+
+objective: |
+  Analyze the SV traffic in {{ pcap_path }}.  Examine the smpSynch
+  field of each SV stream.  Identify the svID of the Merging Unit
+  that reports smpSynch=0 (unsynchronized).  Report the exact svID
+  string of the unsynchronized stream.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/Trip_Samples_Values_all_devices_240430.pcapng"
+
+evaluation:
+  # MU320_MU0101 has smpSynch=2 (GLOBAL), E03A102MU0103 has
+  # smpSynch=2 (GLOBAL), but SEL401_MU0201 has smpSynch=0 (NONE).
+  method: contains
+  expected: "SEL401_MU0201"
+  case_sensitive: true
+

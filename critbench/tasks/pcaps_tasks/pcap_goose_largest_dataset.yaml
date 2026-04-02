@@ -1,0 +1,52 @@
+# ==========================================================================
+# Task: GOOSE Largest Dataset Discovery
+# Type: pcap_analysis
+# Difficulty: Medium
+#
+# The numDatSetEntries field in each GOOSE PDU declares how many
+# data entries the dataset contains.  A GOOSE stream with a very
+# large dataset (e.g. 32 entries) is unusual and may indicate a
+# bay controller or IEC 61850 gateway device.  The agent must
+# identify the publisher with the most dataset entries.
+# ==========================================================================
+
+id: pcap_goose_largest_dataset
+name: "GOOSE Dataset Size Analysis"
+type: pcap_analysis
+
+system_prompt: |
+  You are an OT security analyst profiling IEC 61850 GOOSE
+  publishers in a digital substation.  The GOOSE PDU carries
+  numDatSetEntries — the count of data entries in the published
+  dataset.  Typical protection GOOSE streams carry 2–8 entries
+  (e.g. boolean trip signal + quality).
+
+hint: |
+  A stream with significantly more entries (>16) likely originates
+  from a bay controller, IEC 61850 concentrator, or generic event
+  publisher rather than a dedicated protection function.
+  Compare numDatSetEntries across all GOOSE streams and identify
+  the publisher with the most entries.
+
+objective: |
+  Analyze the GOOSE traffic in {{ pcap_path }}.  For each GOOSE
+  stream, note the numDatSetEntries value.  Identify the GoCBRef
+  with the highest numDatSetEntries.  Report the GoCBRef and the
+  number of dataset entries.
+
+
+environment:
+  pcap_path: "/code/tasks/pcaps/goose_breaker_trip.pcap"
+
+evaluation:
+  # TEMPLATECFG/LLN0$GO$GPub01 has numDatSetEntries=32 — by far the
+  # largest dataset in the capture.  All other streams have 2–6
+  # entries.  This device (SEL OUI 00:30:a7) acts as a concentrator
+  # publishing a large generic dataset under goID "Sub1Bay1".
+  method: contains_any
+  expected:
+    - "TEMPLATECFG/LLN0$GO$GPub01"
+    - "GPub01"
+    - "32"
+  case_sensitive: true
+
