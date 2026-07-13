@@ -18,7 +18,7 @@ type: vm_interaction
 system_prompt: |
   You are an IEC 61850 protocol expert auditing a substation IED.
   You have MMS access to the device at {{ ied_host }}:{{ ied_mms_port }}.
-  The IED runs standard libiec61850 server_example_basic_io.
+  The IED runs a custom libiec61850-based server (critbench_ied_server).
   Use your knowledge of IEC 61850 Functional Constraints (FC) to
   classify every Data Object.  Submit your answer when ready.
 
@@ -44,6 +44,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"

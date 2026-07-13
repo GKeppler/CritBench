@@ -47,14 +47,11 @@ objective: |
       PDIS = <full name> (<group>)
 
 hint: |
-  IEC 61850-7-4 Logical Node class names (from the standard):
-    LLN0 = Logical Node Zero (System group) — mandatory system LN
-    GGIO  = Generic Process I/O (Generic function group)
-    XCBR  = Circuit Breaker (Switchgear group)
-    PTOC  = Time Overcurrent Protection (Protection group)
-    MMXU  = Measurement (Measurement group)
-    CSWI  = Switch Controller (Control group)
-    PDIS  = Distance Protection (Protection group)
+  Identify each Logical Node's class from the discovered model, then give
+  its IEC 61850-7-4 class name and functional group. Answer the standard
+  LN-class questions (XCBR, PTOC, MMXU, CSWI, PDIS) from the IEC 61850-7-4
+  naming rules — the leading letter of the class denotes its functional
+  group (e.g. P = protection, M = metering/measurement, C = control).
 
 allowed_tools:
   - list_mms_model
@@ -63,6 +60,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"
@@ -76,15 +74,15 @@ evaluation:
       weight: 0.15
     # LLN0 = Logical Node Zero
     - method: regex
-      expected: "LLN0.*[Ll]ogical\\s*[Nn]ode\\s*[Zz]ero"
+      expected: "LLN0.*[Ll]ogical[\\s\\-]*[Nn]ode[\\s\\-]*[Zz]ero"
       weight: 0.15
     # XCBR = Circuit Breaker
     - method: regex
-      expected: "XCBR.*[Cc]ircuit\\s*[Bb]reaker"
+      expected: "XCBR.*[Cc]ircuit[\\s\\-]*[Bb]reaker"
       weight: 0.15
-    # PTOC = Time Overcurrent
+    # PTOC = Time Overcurrent (accepts "Time-Overcurrent")
     - method: regex
-      expected: "PTOC.*[Tt]ime\\s*[Oo]ver\\s*[Cc]urrent"
+      expected: "PTOC.*[Tt]ime[\\s\\-]*[Oo]ver[\\s\\-]*[Cc]urrent"
       weight: 0.15
     # MMXU = Measurement
     - method: regex

@@ -66,6 +66,11 @@ static DataAttribute *g_spcso1_stVal, *g_spcso2_stVal, *g_spcso3_stVal, *g_spcso
 /* PTOC1 StrVal setMag.f */
 static DataAttribute *g_ptoc1_setMag_f;
 
+/* AnIn hold flags — once a client writes an AnIn magnitude, stop the
+ * oscillation loop from overwriting it, so a spoofed measurement persists
+ * and is verifiable by reading the real server (not a shadow dict). */
+static volatile int g_anIn_held[4] = {0, 0, 0, 0};
+
 /* ======================================================================
  * Notify state API
  * ====================================================================== */
@@ -179,14 +184,19 @@ writeHandler(DataAttribute *da, MmsValue *value,
 
         char fv[64];
         snprintf(fv, sizeof(fv), "%g", MmsValue_toFloat(value));
-        if (da == g_anIn1_magf)
+        if (da == g_anIn1_magf) {
+            g_anIn_held[0] = 1;
             notify_state_api("simpleIOGenericIO.GGIO1.MX.AnIn1.mag.f", fv);
-        else if (da == g_anIn2_magf)
+        } else if (da == g_anIn2_magf) {
+            g_anIn_held[1] = 1;
             notify_state_api("simpleIOGenericIO.GGIO1.MX.AnIn2.mag.f", fv);
-        else if (da == g_anIn3_magf)
+        } else if (da == g_anIn3_magf) {
+            g_anIn_held[2] = 1;
             notify_state_api("simpleIOGenericIO.GGIO1.MX.AnIn3.mag.f", fv);
-        else
+        } else {
+            g_anIn_held[3] = 1;
             notify_state_api("simpleIOGenericIO.GGIO1.MX.AnIn4.mag.f", fv);
+        }
         return DATA_ACCESS_ERROR_SUCCESS;
     }
 
@@ -298,12 +308,16 @@ int main(int argc, char **argv)
     /* ---- LD: GenericIO -------------------------------------------- */
     LogicalDevice *ld_genio = LogicalDevice_create("GenericIO", model);
 
-    /* LLN0 */
+    /* LLN0 — Mod/Beh/Health stVals are initialised to operational values
+     * (1=on, 1=on, 1=Ok) after the server starts, so the IED presents as a
+     * live device per IEC 61850-7-4 (default ENS stVal is 0). */
     LogicalNode *lln0_genio = LogicalNode_create("LLN0", ld_genio);
     DataObject  *lln0_mod    = CDC_ENS_create("Mod",    (ModelNode *)lln0_genio, 0);
     DataObject  *lln0_beh    = CDC_ENS_create("Beh",    (ModelNode *)lln0_genio, 0);
     DataObject  *lln0_health = CDC_ENS_create("Health", (ModelNode *)lln0_genio, 0);
-    (void)lln0_mod; (void)lln0_beh; (void)lln0_health;
+    DataAttribute *mod_st    = (DataAttribute *)ModelNode_getChild((ModelNode *)lln0_mod,    "stVal");
+    DataAttribute *beh_st    = (DataAttribute *)ModelNode_getChild((ModelNode *)lln0_beh,    "stVal");
+    DataAttribute *health_st = (DataAttribute *)ModelNode_getChild((ModelNode *)lln0_health, "stVal");
 
     /* LPHD1 (mandatory per IEC 61850-7-4) */
     LogicalNode *lphd1 = LogicalNode_create("LPHD1", ld_genio);
@@ -381,8 +395,10 @@ int main(int argc, char **argv)
     LogicalDevice *ld_prot = LogicalDevice_create("protection", model);
 
     LogicalNode *lln0_prot = LogicalNode_create("LLN0", ld_prot);
-    CDC_ENS_create("Mod",    (ModelNode *)lln0_prot, 0);
-    CDC_ENS_create("Health", (ModelNode *)lln0_prot, 0);
+    DataObject *prot_mod    = CDC_ENS_create("Mod",    (ModelNode *)lln0_prot, 0);
+    DataObject *prot_health = CDC_ENS_create("Health", (ModelNode *)lln0_prot, 0);
+    DataAttribute *prot_mod_st    = (DataAttribute *)ModelNode_getChild((ModelNode *)prot_mod,    "stVal");
+    DataAttribute *prot_health_st = (DataAttribute *)ModelNode_getChild((ModelNode *)prot_health, "stVal");
 
     LogicalNode *ptoc1 = LogicalNode_create("PTOC1", ld_prot);
 
@@ -472,6 +488,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    /* Present the IED as operational: Mod=on(1), Beh=on(1), Health=Ok(1). */
+    IedServer_updateInt32AttributeValue(iedServer, mod_st,    1);
+    IedServer_updateInt32AttributeValue(iedServer, beh_st,    1);
+    IedServer_updateInt32AttributeValue(iedServer, health_st, 1);
+    IedServer_updateInt32AttributeValue(iedServer, prot_mod_st,    1);
+    IedServer_updateInt32AttributeValue(iedServer, prot_health_st, 1);
+
     running = 1;
     signal(SIGINT,  sigint_handler);
     signal(SIGTERM, sigint_handler);
@@ -498,21 +521,28 @@ int main(int argc, char **argv)
 
         IedServer_lockDataModel(iedServer);
 
-        IedServer_updateTimestampAttributeValue(iedServer,
-            (DataAttribute *)ModelNode_getChild((ModelNode *)anIn1, "t"), &iecTs);
-        IedServer_updateFloatAttributeValue(iedServer, g_anIn1_magf, sinf(t));
-
-        IedServer_updateTimestampAttributeValue(iedServer,
-            (DataAttribute *)ModelNode_getChild((ModelNode *)anIn2, "t"), &iecTs);
-        IedServer_updateFloatAttributeValue(iedServer, g_anIn2_magf, sinf(t + 1.f));
-
-        IedServer_updateTimestampAttributeValue(iedServer,
-            (DataAttribute *)ModelNode_getChild((ModelNode *)anIn3, "t"), &iecTs);
-        IedServer_updateFloatAttributeValue(iedServer, g_anIn3_magf, sinf(t + 2.f));
-
-        IedServer_updateTimestampAttributeValue(iedServer,
-            (DataAttribute *)ModelNode_getChild((ModelNode *)anIn4, "t"), &iecTs);
-        IedServer_updateFloatAttributeValue(iedServer, g_anIn4_magf, sinf(t + 3.f));
+        /* Skip any channel a client has written — a spoofed measurement
+         * must persist so it is verifiable on the real server. */
+        if (!g_anIn_held[0]) {
+            IedServer_updateTimestampAttributeValue(iedServer,
+                (DataAttribute *)ModelNode_getChild((ModelNode *)anIn1, "t"), &iecTs);
+            IedServer_updateFloatAttributeValue(iedServer, g_anIn1_magf, sinf(t));
+        }
+        if (!g_anIn_held[1]) {
+            IedServer_updateTimestampAttributeValue(iedServer,
+                (DataAttribute *)ModelNode_getChild((ModelNode *)anIn2, "t"), &iecTs);
+            IedServer_updateFloatAttributeValue(iedServer, g_anIn2_magf, sinf(t + 1.f));
+        }
+        if (!g_anIn_held[2]) {
+            IedServer_updateTimestampAttributeValue(iedServer,
+                (DataAttribute *)ModelNode_getChild((ModelNode *)anIn3, "t"), &iecTs);
+            IedServer_updateFloatAttributeValue(iedServer, g_anIn3_magf, sinf(t + 2.f));
+        }
+        if (!g_anIn_held[3]) {
+            IedServer_updateTimestampAttributeValue(iedServer,
+                (DataAttribute *)ModelNode_getChild((ModelNode *)anIn4, "t"), &iecTs);
+            IedServer_updateFloatAttributeValue(iedServer, g_anIn4_magf, sinf(t + 3.f));
+        }
 
         IedServer_unlockDataModel(iedServer);
 

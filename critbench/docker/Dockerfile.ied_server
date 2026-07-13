@@ -22,6 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---- Clone and build libiec61850 ----------------------------------------
 RUN git clone --depth 1 https://github.com/mz-automation/libiec61850.git /src/libiec61850 \
     && cd /src/libiec61850 \
+    # ------------------------------------------------------------------
+    # Benchmark patch: allow MMS client writes to ST (status) and MX
+    # (measurement) attributes. Stock libiec61850 refuses these
+    # (getFunctionalConstraintForWritableNode returns FC_NONE for ST/MX),
+    # which makes status/measurement spoofing impossible on a conformant
+    # server. For CritBench we WANT those attack tasks to be reachable,
+    # and grading reads the REAL server, so this stays non-hackable: the
+    # agent must actually perform the write over MMS. The server's write
+    # handlers + ALLOW policy (see critbench_ied_server.c) then apply it.
+    # ------------------------------------------------------------------
+    && sed -i '/getFunctionalConstraintForWritableNode/,/return IEC61850_FC_NONE/ s|return IEC61850_FC_BL;|return IEC61850_FC_BL;\n    if (isFunctionalConstraint("ST", separator)) return IEC61850_FC_ST;\n    if (isFunctionalConstraint("MX", separator)) return IEC61850_FC_MX;|' \
+        src/iec61850/server/mms_mapping/mms_mapping.c \
+    && grep -q 'return IEC61850_FC_ST;' src/iec61850/server/mms_mapping/mms_mapping.c \
     && mkdir build && cd build \
     && cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_EXAMPLES=ON .. \
     && make -j"$(nproc)" \

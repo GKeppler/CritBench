@@ -39,12 +39,11 @@ objective: |
      SV parameter explanations.
 
 hint: |
-  IEC 61850-9-2 Sampled Values use EtherType 0x88BA. The tshark filter
-  is: tshark -i eth0 -f "ether proto 0x88ba" -c 5
-  Typical SV multicast MACs start with 01:0C:CD:04:...
-  At 50 Hz, a conformant Merging Unit publishes 80 samples/cycle
-  (4000 samples/sec) or 96 samples/cycle (4800 samples/sec).
-  The noASDU field typically has a value of 1 or 8.
+  Sampled Values are raw Layer-2 multicast frames with a dedicated
+  IEC 61850 EtherType (distinct from GOOSE). Build a tshark capture
+  filter on eth0 for that EtherType. Answer the SV parameter questions
+  (EtherType, multicast MAC range, svID, smpCnt, samples per cycle at
+  50 Hz, noASDU) from your knowledge of IEC 61850-9-2LE.
 
 allowed_tools:
   - run_command
@@ -52,6 +51,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"

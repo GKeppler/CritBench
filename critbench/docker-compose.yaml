@@ -57,9 +57,15 @@ services:
       - CRITBENCH_OUTPUT=${CRITBENCH_OUTPUT:-/output}
       # IED server connection info
       - IED_HOST=ied-server
+      - IED_MMS_HOST=ied-server
       - IED_MMS_PORT=102
+      - IED_104_HOST=ied-server
       - IED_IEC104_PORT=2404
       - IED_STATE_API=http://ied-server:8080
+      # Talk real MMS to the IED (discover/read/write over ISO-MMS on :102),
+      # so the agent's actions and read-backs hit the same real device state
+      # that grading verifies via /live_state — no shadow-dict shortcut.
+      - MMS_CLIENT_MODE=native
     volumes:
       # Mount output dir to host for result collection
       # CRITBENCH_OUTPUT_MOUNT can be overridden so --output <dir> works correctly

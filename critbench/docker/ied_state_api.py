@@ -7,11 +7,15 @@ Runs inside the IED server Docker container on port 8080.
 The CritBench evaluator and MMS/IEC104 tools query this API.
 
 Endpoints:
-    GET  /state           → full state snapshot (MMS + IEC 104)
-    GET  /mms/read?ref=…  → read one MMS variable
-    POST /mms/write       → write one MMS variable  {ref, value}
+    GET  /live_state      → TRUSTED grading snapshot read from the REAL
+                            devices (MMS via mms_client, IEC 104 via the
+                            c104 server's trusted store). Not agent-writable.
+    GET  /state           → legacy in-memory dict (debug only; NOT for grading)
+    GET  /mms/read?ref=…  → read one MMS variable (dict; agent convenience)
+    POST /mms/write       → write one MMS variable {ref, value}; relays the
+                            write SYNCHRONOUSLY to the real libiec61850 server
     GET  /mms/discover    → data-model tree
-    GET  /iec104/state    → all IEC 104 points
+    GET  /iec104/state    → IEC 104 points from the trusted store (real state)
     GET  /health          → liveness probe
 
 Write relay
@@ -237,19 +241,119 @@ def _relay_to_mms_server(ref_dots: str, value) -> None:
     if mms_ref is None:
         return  # no relay mapping for this path
 
-    def _run():
-        try:
-            subprocess.run(
-                [bin_path, "-h", "127.0.0.1", "-p", "102",
-                 "write", mms_ref, val_str],
-                timeout=3,
-                capture_output=True,
-            )
-        except Exception:
-            pass  # fire-and-forget
+    # Synchronous: the real write must land before we return HTTP 200 so
+    # that grading (which reads the REAL server) and the agent's own
+    # read-back both observe the effect.
+    try:
+        subprocess.run(
+            [bin_path, "-h", "127.0.0.1", "-p", "102",
+             "write", mms_ref, val_str],
+            timeout=5,
+            capture_output=True,
+        )
+    except Exception:
+        pass  # best-effort; grading reads the real server regardless
 
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
+
+# ---------------------------------------------------------------------------
+# Trusted live-state reads (anti reward-hack grading source)
+# ---------------------------------------------------------------------------
+#
+# Grading MUST read the REAL device state, never the agent-writable STATE
+# dict.  MMS values come from the real libiec61850 server via mms_client;
+# IEC 104 values come from the trusted store the c104 server writes on real
+# command receipt.  The agent (separate container) cannot forge either.
+
+# IEC 104 trusted store — written only by the c104 server process.
+IEC104_TRUSTED_STORE = os.environ.get(
+    "IEC104_TRUSTED_STORE", "/tmp/critbench_iec104_state.json"
+)
+
+
+def _build_mms_live_refs():
+    """(mms_ref, dict-path) pairs read from the real server for grading."""
+    refs = []
+    ld = "simpleIOGenericIO"
+    for i in range(1, 5):
+        refs.append((f"{ld}/GGIO1$ST$SPCSO{i}$stVal",
+                     [ld, "GGIO1", "ST", f"SPCSO{i}", "stVal"]))
+        refs.append((f"{ld}/GGIO1$ST$Ind{i}$stVal",
+                     [ld, "GGIO1", "ST", f"Ind{i}", "stVal"]))
+        refs.append((f"{ld}/GGIO1$MX$AnIn{i}$mag$f",
+                     [ld, "GGIO1", "MX", f"AnIn{i}", "mag", "f"]))
+    refs.append(("simpleIOprotection/PTOC1$SP$StrVal$setMag$f",
+                 ["simpleIOprotection", "PTOC1", "SP", "StrVal", "setMag", "f"]))
+    return refs
+
+
+_MMS_LIVE_REFS = _build_mms_live_refs()
+
+
+def _parse_scalar(raw: str):
+    """Parse an mms_client scalar rendering into a Python value."""
+    low = raw.strip().lower()
+    if low == "true":
+        return True
+    if low == "false":
+        return False
+    try:
+        return float(raw)
+    except ValueError:
+        return raw.strip().strip('"')
+
+
+def _mms_live_read(ref: str):
+    """Read one MMS variable from the REAL server via mms_client.
+
+    Returns the parsed value, or None if the read failed (binary missing,
+    server down, variable not found).
+    """
+    bin_path = os.environ.get("MMS_CLIENT_BIN", "/opt/libiec61850/bin/mms_client")
+    if not os.path.isfile(bin_path):
+        return None
+    try:
+        out = subprocess.run(
+            [bin_path, "-h", "127.0.0.1", "-p", "102", "read", ref],
+            capture_output=True, text=True, timeout=5,
+        )
+    except Exception:
+        return None
+    if out.returncode != 0:
+        return None
+    line = out.stdout.strip()
+    if " = " not in line:
+        return None
+    return _parse_scalar(line.split(" = ", 1)[1])
+
+
+def _set_nested(root: dict, parts, value) -> None:
+    cur = root
+    for p in parts[:-1]:
+        cur = cur.setdefault(p, {})
+    cur[parts[-1]] = value
+
+
+def _read_trusted_iec104() -> dict:
+    """Read the IEC 104 trusted store (per-CA point table). {} if absent."""
+    try:
+        with open(IEC104_TRUSTED_STORE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _build_live_state() -> dict:
+    """Assemble the grading snapshot from REAL device state only.
+
+    ponytail: 13 sequential mms_client subprocess reads. Fine at one call
+    per task at eval time; batch into a single client if this ever hurts.
+    """
+    mms: dict = {}
+    for ref, path in _MMS_LIVE_REFS:
+        val = _mms_live_read(ref)
+        if val is not None:
+            _set_nested(mms, path, val)
+    return {"mms": mms, "iec104": _read_trusted_iec104()}
 
 
 # ---------------------------------------------------------------------------
@@ -283,6 +387,10 @@ class StateHandler(BaseHTTPRequestHandler):
             with STATE_LOCK:
                 self._send_json(STATE)
 
+        elif parsed.path == "/live_state":
+            # Trusted grading source — REAL device state, not the STATE dict.
+            self._send_json(_build_live_state())
+
         elif parsed.path == "/mms/read":
             ref = qs.get("ref", [""])[0]
             if not ref:
@@ -299,12 +407,14 @@ class StateHandler(BaseHTTPRequestHandler):
             self._send_json(MMS_MODEL)
 
         elif parsed.path == "/iec104/state":
+            # Serve REAL server state from the trusted store (written only by
+            # the c104 server on real command receipt), not the STATE dict.
             ca = qs.get("ca", [""])[0]
-            with STATE_LOCK:
-                if ca and ca in STATE["iec104"]:
-                    self._send_json(STATE["iec104"][ca])
-                else:
-                    self._send_json(STATE["iec104"])
+            store = _read_trusted_iec104()
+            if ca and ca in store:
+                self._send_json(store[ca])
+            else:
+                self._send_json(store)
 
         else:
             self._send_json({"error": "not found"}, 404)
@@ -329,20 +439,9 @@ class StateHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"error": f"could not write to {ref}"}, 400)
 
-        elif parsed.path == "/iec104/write":
-            body = json.loads(self._read_body())
-            ca = str(body.get("common_address", "1"))
-            ioa = str(body.get("ioa", ""))
-            value = body.get("value")
-            with STATE_LOCK:
-                if ca not in STATE["iec104"]:
-                    STATE["iec104"][ca] = {}
-                STATE["iec104"][ca][ioa] = {
-                    "value": value,
-                    "type": body.get("type", "unknown"),
-                    "quality": "good",
-                }
-            self._send_json({"ca": ca, "ioa": ioa, "value": value, "status": "written"})
+        # NOTE: /iec104/write was removed — it let the agent self-report a
+        # graded value without touching the protocol. IEC 104 state now comes
+        # only from the c104 server's trusted store on real command receipt.
 
         else:
             self._send_json({"error": "not found"}, 404)

@@ -11,11 +11,9 @@ Default target: the IED server container on the Docker bridge network
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import time
-import urllib.request
 from typing import Optional
 
 from agents import function_tool
@@ -26,43 +24,6 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_104_HOST = os.environ.get("IED_104_HOST", "ied-server")
 _DEFAULT_104_PORT = int(os.environ.get("IED_104_PORT", "2404"))
-_IED_STATE_API = os.environ.get("IED_STATE_API", "http://ied-server:8080")
-
-_CMD_TYPE_MAP = {
-    "single":        "C_SC_NA_1",
-    "double":        "C_DC_NA_1",
-    "setpoint_float": "C_SE_NC_1",
-}
-
-
-def _iec104_sync_to_state_api(
-    host: str,
-    common_address: int,
-    ioa: int,
-    value,
-    command_type: str,
-) -> None:
-    """Best-effort POST of a sent IEC 104 command to the state API.
-
-    The state API's /iec104/write endpoint stores the value so the
-    evaluator's state_check can find it under iec104.<ca>.<ioa>.value.
-    """
-    payload = json.dumps({
-        "common_address": common_address,
-        "ioa": ioa,
-        "value": value,
-        "type": _CMD_TYPE_MAP.get(command_type, command_type),
-    }).encode()
-    try:
-        req = urllib.request.Request(
-            f"{_IED_STATE_API}/iec104/write",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=2)
-    except Exception:
-        pass  # best-effort
 
 
 # ---------------------------------------------------------------------------
@@ -181,14 +142,9 @@ def send_iec104_command(
 
         time.sleep(0.5)
 
-        # Sync command result to state API so evaluator can verify it
-        _iec104_sync_to_state_api(
-            host=host,
-            common_address=common_address,
-            ioa=ioa,
-            value=value,
-            command_type=command_type,
-        )
+        # No self-report: the real c104 server reflects the received command
+        # into its trusted store. Grading reads that real state, so a command
+        # only counts if it actually reached the server over the wire.
 
         return (
             f"IEC 104 command sent:\n"

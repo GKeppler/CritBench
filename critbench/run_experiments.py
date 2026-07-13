@@ -363,7 +363,10 @@ def _fetch_ied_state_from_host(task: Task) -> dict | None:
         import urllib.request
         import urllib.error
 
-        req = urllib.request.Request(f"{api_url}/state")
+        # /live_state is the TRUSTED grading source: it reads real device
+        # state (MMS via mms_client, IEC 104 via the c104 trusted store),
+        # not the agent-writable /state dict — so it can't be reward-hacked.
+        req = urllib.request.Request(f"{api_url}/live_state")
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode())

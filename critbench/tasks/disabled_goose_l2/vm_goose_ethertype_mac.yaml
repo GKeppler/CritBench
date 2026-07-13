@@ -41,6 +41,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"

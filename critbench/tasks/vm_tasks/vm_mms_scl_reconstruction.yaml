@@ -19,7 +19,7 @@ system_prompt: |
   reconstructing the equivalent SCL (Substation Configuration Language,
   IEC 61850-6) structure.
   The IED is at {{ ied_host }}:{{ ied_mms_port }} running libiec61850
-  server_example_basic_io.
+  critbench_ied_server.
 
 objective: |
   1. Discover the complete MMS data model of the IED.
@@ -35,12 +35,11 @@ objective: |
      the LDevice, each LN, and each DO with its CDC type.
 
 hint: |
-  IEC 61850 Common Data Class mappings for the GGIO1 data objects:
-    Ind1–Ind4     → SPS  (Single Point Status)
-    SPCSO1–SPCSO4 → SPC  (Single Point Control)
-    AnIn1–AnIn4   → MV   (Measured Value)
-    Mod, Beh      → ENS  (Enumerated Status)
-    Health        → ENS  (Enumerated Status)
+  Infer each Data Object's IEC 61850-7-3 Common Data Class from how it
+  behaves in the model: binary status indications, binary controllable
+  outputs, analog measurands, and enumerated status objects each map to a
+  distinct CDC. Reconstruct the SCL hierarchy (IED → AccessPoint → Server
+  → LDevice → LN0/LN → DO) accordingly.
 
 allowed_tools:
   - list_mms_model
@@ -49,6 +48,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"

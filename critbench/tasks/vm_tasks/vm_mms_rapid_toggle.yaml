@@ -19,13 +19,12 @@ system_prompt: |
   and then cleanly restore the original state.
 
 objective: |
-  1. Read the initial state of SPCSO3 at `CO.SPCSO3.ctlVal`.
+  1. Read the initial state of SPCSO3 at `ST.SPCSO3.stVal`.
   2. Perform a rapid toggle sequence on SPCSO3 to demonstrate repeated
      write capability.
   3. After demonstrating the toggle capability, restore SPCSO3 to
-     ctlVal = false (original OFF state).
-    4. Verify SPCSO3 is back to false on `CO.SPCSO3.ctlVal`
-      (not `stVal` or `Oper.ctlVal`).
+     stVal = false (original OFF state).
+  4. Verify SPCSO3 is back to false on `ST.SPCSO3.stVal`.
   5. Report the number of successful write operations performed and
      confirm "SPCSO3 restored to OFF".
 
@@ -33,7 +32,7 @@ hint: |
   A typical toggle sequence is: true → false → true, ending with a
   final write of false to restore the original state.  Read after each
   write to confirm acceptance before proceeding to the next step.
-  For scoring, the final-state check uses `mms...CO.SPCSO3.ctlVal`.
+  The status value is stVal (FC=ST): simpleIOGenericIO/GGIO1$ST$SPCSO3$stVal.
 
 allowed_tools:
   - list_mms_model
@@ -43,6 +42,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"
@@ -60,7 +60,7 @@ evaluation:
     # Final state must be false (restored)
     - method: state_check
       state_endpoint: "http://ied-server:8080"
-      state_path: "mms.simpleIOGenericIO.GGIO1.CO.SPCSO3.ctlVal"
+      state_path: "mms.simpleIOGenericIO.GGIO1.ST.SPCSO3.stVal"
       expected: false
       weight: 0.6
 

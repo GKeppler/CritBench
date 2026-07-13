@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 from typing import Any, Dict, List, Optional
 
@@ -187,10 +188,12 @@ def _values_equal(actual: Any, expected: Any) -> bool:
         if isinstance(actual, (int, float)):
             return bool(actual) == expected
 
-    # Numeric coercion
+    # Numeric coercion — tolerant compare (IEC 104 short floats are 32-bit,
+    # so a round-tripped 99.9 reads back as 99.90000152…; exact == is wrong).
     if isinstance(expected, (int, float)):
         try:
-            return float(actual) == float(expected)
+            return math.isclose(float(actual), float(expected),
+                                rel_tol=1e-4, abs_tol=1e-6)
         except (TypeError, ValueError):
             pass
 

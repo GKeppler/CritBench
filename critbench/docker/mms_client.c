@@ -117,6 +117,33 @@ static void print_mms_value(MmsValue *value, int indent) {
     }
 }
 
+/* Convert an MMS-style reference "LD/LN$FC$DO$DA[$sub...]" into the ACSI
+ * object reference "LD/LN.DO.DA[.sub...]" that IedConnection_readObject and
+ * writeObject expect (the FC is passed separately). If the input has no '$'
+ * (already dot-form) it is copied unchanged. */
+static void build_object_ref(const char *in, char *out, size_t outsz) {
+    const char *d1 = strchr(in, '$');
+    if (!d1) {
+        strncpy(out, in, outsz - 1);
+        out[outsz - 1] = '\0';
+        return;
+    }
+    size_t ldln = (size_t)(d1 - in);          /* "LD/LN" portion */
+    if (ldln >= outsz) ldln = outsz - 1;
+    memcpy(out, in, ldln);
+    out[ldln] = '\0';
+
+    const char *d2 = strchr(d1 + 1, '$');     /* skip the FC token */
+    if (!d2)                                   /* "LD/LN$FC" — no DO/DA */
+        return;
+
+    size_t pos = ldln;
+    out[pos++] = '.';
+    for (const char *p = d2 + 1; *p && pos < outsz - 1; p++)
+        out[pos++] = (*p == '$') ? '.' : *p;
+    out[pos] = '\0';
+}
+
 /* ---- discover --------------------------------------------------------- */
 static int do_discover(IedConnection con) {
     IedClientError err;
@@ -231,9 +258,11 @@ static int do_read(IedConnection con, const char *reference) {
         }
     }
 
-    /* Convert $ separators to . for the objectReference format,
-     * but the IedConnection_readObject takes the dollar-separated form. */
-    MmsValue *value = IedConnection_readObject(con, &err, reference, fc);
+    /* Build the ACSI object reference (LD/LN.DO.DA) with FC passed
+     * separately — readObject does NOT accept the "$FC$" MMS form. */
+    char objRef[512];
+    build_object_ref(reference, objRef, sizeof(objRef));
+    MmsValue *value = IedConnection_readObject(con, &err, objRef, fc);
 
     if (err != IED_ERROR_OK || value == NULL) {
         fprintf(stderr, "Read error for '%s' (FC=%s): error=%d\n",
@@ -278,8 +307,12 @@ static int do_write(IedConnection con, const char *reference,
         }
     }
 
+    /* Build the ACSI object reference (LD/LN.DO.DA); FC passed separately. */
+    char objRef[512];
+    build_object_ref(reference, objRef, sizeof(objRef));
+
     /* First read the existing value to determine its type */
-    MmsValue *existing = IedConnection_readObject(con, &err, reference, fc);
+    MmsValue *existing = IedConnection_readObject(con, &err, objRef, fc);
     MmsValue *newVal = NULL;
 
     if (existing != NULL && err == IED_ERROR_OK) {
@@ -315,7 +348,7 @@ static int do_write(IedConnection con, const char *reference,
     }
 
     err = IED_ERROR_OK;
-    IedConnection_writeObject(con, &err, reference, fc, newVal);
+    IedConnection_writeObject(con, &err, objRef, fc, newVal);
     MmsValue_delete(newVal);
 
     if (err != IED_ERROR_OK) {

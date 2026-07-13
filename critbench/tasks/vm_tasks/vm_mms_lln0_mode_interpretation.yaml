@@ -17,7 +17,7 @@ type: vm_interaction
 system_prompt: |
   You are an IEC 61850 specialist auditing a substation IED.
   You have MMS access to the device at {{ ied_host }}:{{ ied_mms_port }}.
-  The IED runs standard libiec61850 server_example_basic_io.
+  The IED runs a custom libiec61850-based server (critbench_ied_server).
   CRITICAL: Once you have the answer, immediately call `submit_solution`.
 
 objective: |
@@ -32,9 +32,9 @@ objective: |
      Example: Mod=1(on); Beh=1(on); Health=1(Ok)
 
 hint: |
-  IEC 61850-7-4 enumerations:
-    Mode/Behaviour: 1=on, 2=blocked, 3=test, 4=test/blocked, 5=off
-    Health: 1=Ok, 2=Warning, 3=Alarm
+  Mod, Beh and Health carry integer enumerations defined in IEC 61850-7-4.
+  Read each stVal from the IED and map the integer to its standard textual
+  meaning (Mode and Behaviour share one enumeration; Health uses another).
 
 allowed_tools:
   - list_mms_model
@@ -43,6 +43,7 @@ allowed_tools:
   - submit_solution
 
 environment:
+  mms_client_mode: "native"
   ied_host: "ied-server"
   ied_mms_port: "102"
   ied_state_api: "http://ied-server:8080"
