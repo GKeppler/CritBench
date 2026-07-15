@@ -28,6 +28,9 @@ from pathlib import Path
 # Ensure critbench packages are importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from tasks.task_schema import Task, TaskType, load_task, load_all_tasks
 from evaluation.evaluator import evaluate
 
@@ -75,12 +78,35 @@ def _docker_compose_cmd(compose_file: str) -> list[str]:
         return ["docker-compose", "-f", compose_file]
 
 
-def _check_docker_images() -> None:
+def _compose_services(compose_file: str) -> set[str]:
+    """Return the set of service names defined in a compose file."""
+    cmd = _docker_compose_cmd(compose_file)
+    result = subprocess.run([*cmd, "config", "--services"], capture_output=True, text=True)
+    if result.returncode != 0:
+        return set()
+    return {s.strip() for s in result.stdout.splitlines() if s.strip()}
+
+
+def _task_is_grfics(task: Task) -> bool:
+    """A task belongs to the GRFICSv3 (Modbus/OpenPLC) family, not the
+    IEC 61850 ied-server family — it targets a different compose topology
+    and a different host-side grading endpoint."""
+    return str(task.environment.extra.get("state_api", "")).startswith("http://grfics-state-api")
+
+
+def _check_docker_images(compose_file: str = "docker-compose.yaml") -> None:
     """Verify the required Docker images exist before running experiments.
 
     Raises RuntimeError with build instructions if any image is missing.
+    The ied-server image is only required when the compose file actually
+    defines an ``ied-server`` service (the GRFICSv3 compose doesn't — its
+    upstream images are pulled and its state-api sidecar is built
+    automatically by ``docker compose up``).
     """
-    required = ["critbench-agent:latest", "critbench-ied:latest"]
+    services = _compose_services(compose_file)
+    required = ["critbench-agent:latest"]
+    if "ied-server" in services:
+        required.append("critbench-ied:latest")
 
     missing = []
     for img in required:
@@ -136,6 +162,46 @@ def stop_ied_server(compose_file: str) -> None:
     """Stop and remove the IED server container."""
     cmd = _docker_compose_cmd(compose_file)
     log.info("Stopping IED server …")
+    subprocess.run(
+        [*cmd, "down", "--volumes", "--remove-orphans"],
+        capture_output=True, text=True,
+    )
+
+
+def start_grfics_stack(compose_file: str) -> None:
+    """Start the GRFICSv3 process stack (simulation + plc + state-api sidecar)
+    and wait until the state API responds. Mirrors start_ied_server(), but
+    for the Modbus/OpenPLC compose topology (no single 'ied-server' service)."""
+    cmd = _docker_compose_cmd(compose_file)
+    log.info("Starting GRFICSv3 stack (simulation + plc + grfics-state-api) …")
+    subprocess.run(
+        [*cmd, "up", "-d", "--build", "simulation", "plc", "grfics-state-api"],
+        check=True, capture_output=True, text=True,
+    )
+    import urllib.request
+    import urllib.error
+
+    health_url = "http://localhost:18081/health"
+    for attempt in range(60):
+        try:
+            with urllib.request.urlopen(health_url, timeout=3) as resp:
+                if resp.status == 200:
+                    log.info("GRFICSv3 state API healthy ✓")
+                    return
+        except (urllib.error.URLError, OSError):
+            pass
+        time.sleep(3)
+    raise RuntimeError(
+        f"GRFICSv3 state API did not become healthy in time "
+        f"(checked {health_url} for 180 s — plc/simulation may still be booting "
+        f"or the fortiphyd images may still be pulling)"
+    )
+
+
+def stop_grfics_stack(compose_file: str) -> None:
+    """Stop and remove the GRFICSv3 stack."""
+    cmd = _docker_compose_cmd(compose_file)
+    log.info("Stopping GRFICSv3 stack …")
     subprocess.run(
         [*cmd, "down", "--volumes", "--remove-orphans"],
         capture_output=True, text=True,
@@ -309,7 +375,13 @@ def _create_sanitised_task_yaml(
             "run_command",
             "submit_solution",
         ]
-    elif data.get("type") == "vm_interaction":
+    elif data.get("type") == "vm_interaction" and not str(
+        data.get("environment", {}).get("state_api", "")
+    ).startswith("http://grfics-state-api"):
+        # GRFICSv3 (Modbus) tasks are also vm_interaction but target a
+        # different toolset (tools_modbus, not MMS/GOOSE/IEC104) — keep
+        # whatever allowed_tools their own YAML defines instead of
+        # overwriting with the IEC 61850 tool list below.
         data["allowed_tools"] = [
             'extract_goose_frames',
             'extract_mms_operations',
@@ -347,32 +419,37 @@ def _create_sanitised_task_yaml(
 # ---------------------------------------------------------------------------
 
 def _fetch_ied_state_from_host(task: Task) -> dict | None:
-    """Fetch IED server state from the HOST side (via mapped port 18080).
+    """Fetch live grading state from the HOST side (via a mapped port).
 
     This is the host-side counterpart of what the old agent-side
     _fetch_ied_state() did, but uses the host-mapped port instead of
-    the Docker-internal address.
+    the Docker-internal address. Dispatches between the IEC 61850
+    ied-server (port 18080, /live_state) and the GRFICSv3 state-api
+    sidecar (port 18081, /state) depending on the task's family — each
+    is a different compose stack with a different container topology.
     """
     if task.type in (TaskType.PCAP_ANALYSIS, TaskType.SCL_ANALYSIS):
         return None
 
-    # Host-side mapped port (see docker-compose: 18080:8080)
-    api_url = "http://localhost:18080"
+    if _task_is_grfics(task):
+        api_url, path = "http://localhost:18081", "/state"
+    else:
+        api_url, path = "http://localhost:18080", "/live_state"
 
     try:
         import urllib.request
         import urllib.error
 
-        # /live_state is the TRUSTED grading source: it reads real device
-        # state (MMS via mms_client, IEC 104 via the c104 trusted store),
-        # not the agent-writable /state dict — so it can't be reward-hacked.
-        req = urllib.request.Request(f"{api_url}/live_state")
+        # /live_state (ied-server) and /state (grfics-state-api) both read
+        # the REAL device — never an agent-writable dict — so grading can't
+        # be reward-hacked by writing to the state API directly.
+        req = urllib.request.Request(f"{api_url}{path}")
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode())
-            log.warning("IED state API returned %d", resp.status)
+            log.warning("State API returned %d", resp.status)
     except Exception as exc:
-        log.warning("Could not fetch IED state from host: %s", exc)
+        log.warning("Could not fetch live state from host: %s", exc)
     return None
 
 
@@ -615,21 +692,28 @@ def run_experiments(config: ExperimentConfig) -> list[dict]:
     log.info(f"Loaded {len(tasks)} task(s), {len(config.models)} model(s), "
              f"{config.runs_per_combo} run(s) each")
 
-    # Check which tasks need the IED server
+    # Check which tasks need a live environment stack, and which one —
+    # GRFICSv3 tasks and classic IEC 61850 vm_interaction tasks are both
+    # TaskType.VM_INTERACTION but need different compose stacks.
     vm_tasks = [t for t, _ in tasks if t.type == TaskType.VM_INTERACTION]
+    grfics_tasks = [t for t in vm_tasks if _task_is_grfics(t)]
+    ied_tasks = [t for t in vm_tasks if not _task_is_grfics(t)]
     ied_running = False
+    grfics_running = False
 
     results: list[dict] = []
 
     try:
         # Verify Docker images exist (they must be built beforehand)
         if not config.dry_run:
-            _check_docker_images()
+            _check_docker_images(config.docker_compose_file)
 
-        # Start IED server only if VM-interaction tasks exist
-        if vm_tasks and not config.dry_run:
+        if ied_tasks and not config.dry_run:
             start_ied_server(config.docker_compose_file)
             ied_running = True
+        if grfics_tasks and not config.dry_run:
+            start_grfics_stack(config.docker_compose_file)
+            grfics_running = True
 
         # Build experiment list
         experiments = []
@@ -667,6 +751,8 @@ def run_experiments(config: ExperimentConfig) -> list[dict]:
     finally:
         if ied_running:
             stop_ied_server(config.docker_compose_file)
+        if grfics_running:
+            stop_grfics_stack(config.docker_compose_file)
 
     # Write aggregate results
     os.makedirs(config.output_base, exist_ok=True)

@@ -27,6 +27,7 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 | PCAP analysis | `critbench/tasks/pcaps_tasks/` | Protocol reconnaissance and event interpretation from captures | exact/contains/regex/multi |
 | SCD/CID analysis | `critbench/tasks/scd_tasks/` | Substation topology and logical model extraction from SCL files | exact/contains/regex/multi |
 | VM interaction | `critbench/tasks/vm_tasks/` | Live state manipulation and protocol interaction against IED service | multi + optional state checks |
+| GRFICSv3 (Modbus/OpenPLC) | `critbench/tasks/GRFICSv3/` | Live Modbus recon/tamper against a real [GRFICSv3](https://github.com/Fortiphyd/GRFICSv3) reactor PLC | multi + state checks |
 
 ## Repository Layout
 
@@ -98,6 +99,23 @@ python run_experiments.py \
   --models gpt-4o \
   --runs 1 \
   --output output/test_vm
+```
+
+### Single GRFICSv3 Task (Modbus/OpenPLC, Containerized)
+
+Targets a real [GRFICSv3](https://github.com/Fortiphyd/GRFICSv3) reactor
+simulation + OpenPLC runtime (pulled as-is from Docker Hub) instead of
+CritBench's own IED server. The compose file only starts what the scenario
+needs — the process physics, the PLC, and a small state-API sidecar for
+grading — not GRFICSv3's HMI/EWS/Kali/router/Caldera/Wazuh containers, which
+are human-facing training infrastructure the agent doesn't use.
+
+```bash
+cd critbench
+export OPENAI_API_KEY="sk-..."
+export CRITBENCH_TASK="/code/tasks/GRFICSv3/grfics_pressure_setpoint_attack.yaml"
+
+docker compose -f docker/docker-compose.grfics.yml up --build
 ```
 
 ### Batch Experiments

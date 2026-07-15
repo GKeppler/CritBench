@@ -1,0 +1,131 @@
+# ==========================================================================
+# docker-compose.grfics.yml  —  CritBench GRFICSv3 (Modbus/OpenPLC) environment
+#
+# GRFICSv3 (https://github.com/Fortiphyd/GRFICSv3) is an 8-container OT lab
+# (simulation, plc, HMI/ScadaLTS, engineering workstation, Kali, router,
+# Caldera, Wazuh) built for human classroom/demo use. CritBench only needs
+# the two containers that implement the actual cyber-physical process the
+# agent attacks — the rest (HMI, EWS, Kali, router, Caldera, Wazuh) are
+# human-facing training/attacker infrastructure the LLM agent doesn't use,
+# so they are deliberately NOT started here.
+#
+# Services:
+#   simulation  → real GRFICSv3 process physics + 6 Modbus field-device
+#                 slaves (feed1/feed2/purge/product/tank/analyzer), image
+#                 pulled as-is from Docker Hub (not rebuilt/forked)
+#   plc         → real GRFICSv3 OpenPLC runtime running the unmodified
+#                 reactor ladder-logic program; exposes the Modbus TCP
+#                 slave interface (port 502) the agent and grading target
+#   grfics-state-api → CritBench-side sidecar: live Modbus reads of the
+#                 plc's register map, served as JSON for state_check grading
+#   agent       → CritBench OT agent with the tools_modbus CritLayer tools
+#
+# The network below intentionally reuses GRFICSv3's own subnet and fixed
+# IPs for plc/simulation (192.168.95.0/24, plc=.2, simulation=.45) as a
+# plain bridge network instead of upstream's macvlan (which requires a real
+# host NIC and LAN access we don't need for a self-contained agent task).
+# simulation's own entrypoint script self-assigns the .10-.15 field-device
+# aliases on top of .45 — that logic is unchanged and works the same on
+# bridge as on macvlan.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.grfics.yml up
+#
+# Environment vars to set (or use .env file):
+#   OPENAI_API_KEY / OPENROUTER_API_KEY
+#   CRITBENCH_MODEL     e.g. gpt-4o
+#   CRITBENCH_TASK      path to task YAML (inside container: /code/tasks/…)
+#   CRITBENCH_OUTPUT    output directory (inside container: /output)
+# ==========================================================================
+
+services:
+  simulation:
+    image: fortiphyd/grfics-simulation
+    hostname: simulation
+    cap_add:
+      - NET_ADMIN   # needed by simulation's own entrypoint (ip addr add for field-device aliases)
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "55555"]
+      interval: 5s
+      retries: 5
+    networks:
+      ics-net:
+        ipv4_address: 192.168.95.45
+    restart: unless-stopped
+
+  plc:
+    image: fortiphyd/grfics-plc
+    hostname: plc
+    cap_add:
+      - NET_ADMIN
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      ics-net:
+        ipv4_address: 192.168.95.2
+    volumes:
+      - grfics_plc_volume:/docker_persistent
+    restart: unless-stopped
+
+  grfics-state-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.grfics_state_api
+    image: critbench-grfics-state-api:latest
+    hostname: grfics-state-api
+    environment:
+      - GRFICS_MODBUS_HOST=plc
+      - GRFICS_MODBUS_PORT=502
+    ports:
+      - "18081:8080"    # host-side access for run_experiments.py grading
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      plc:
+        condition: service_healthy
+    networks:
+      - ics-net
+    restart: unless-stopped
+
+  agent:
+    image: critbench-agent:latest
+    hostname: agent
+    depends_on:
+      grfics-state-api:
+        condition: service_healthy
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - KITOOLBOX_API_KEY=${KITOOLBOX_API_KEY:-}
+      - CRITBENCH_MODEL=${CRITBENCH_MODEL:-gpt-4o}
+      - CRITBENCH_TASK=${CRITBENCH_TASK:-/code/tasks/GRFICSv3/grfics_modbus_recon.yaml}
+      - CRITBENCH_OUTPUT=${CRITBENCH_OUTPUT:-/output}
+      - GRFICS_MODBUS_HOST=plc
+      - GRFICS_MODBUS_PORT=502
+      - GRFICS_STATE_API=http://grfics-state-api:8080
+    volumes:
+      - ${CRITBENCH_OUTPUT_MOUNT:-../output}:/output
+      - ../tasks/GRFICSv3:/code/tasks/GRFICSv3:ro
+    networks:
+      - ics-net
+    restart: "no"
+
+networks:
+  ics-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.95.0/24
+          gateway: 192.168.95.1
+
+volumes:
+  grfics_plc_volume:
+    name: grfics_plc_volume

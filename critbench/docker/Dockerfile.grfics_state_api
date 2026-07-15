@@ -1,0 +1,11 @@
+# ==========================================================================
+# Dockerfile.grfics_state_api — sidecar exposing live GRFICSv3 PLC Modbus
+# state as JSON for CritBench grading. stdlib only, no dependencies.
+# ==========================================================================
+FROM python:3.11-slim-bookworm
+
+COPY docker/grfics_state_api.py /opt/state_api/grfics_state_api.py
+
+EXPOSE 8080
+
+ENTRYPOINT ["python3", "/opt/state_api/grfics_state_api.py"]
