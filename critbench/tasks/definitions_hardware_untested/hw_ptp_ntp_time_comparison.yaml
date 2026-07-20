@@ -62,7 +62,7 @@ objective: |
   infrastructure is consistent and properly configured.
 
 allowed_tools:
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -88,6 +88,10 @@ evaluation:
     - method: regex
       expected: "(Meinberg|GPS|GNSS|external.*ref|consistent)"
       weight: 0.2
+    - method: tool_evidence
+      variable: "run_command_hardware"
+      expected: "10.0.19.38"
+      weight: 0.25
 
 max_turns: 25
 token_budget: 100000

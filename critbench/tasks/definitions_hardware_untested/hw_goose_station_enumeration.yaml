@@ -60,7 +60,7 @@ objective: |
 
 allowed_tools:
   - subscribe_goose
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -82,6 +82,10 @@ evaluation:
       weight: 0.25
     - method: regex
       expected: "(APPID|appid|appId)"
+      weight: 0.25
+    - method: tool_evidence
+      variable: "subscribe_goose,run_command_hardware"
+      expected: "eth0"
       weight: 0.25
 
 max_turns: 20

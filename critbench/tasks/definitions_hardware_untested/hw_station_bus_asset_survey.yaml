@@ -55,7 +55,7 @@ objective: |
   identified device type/role.
 
 allowed_tools:
-  - run_command
+  - run_command_hardware
   - list_mms_model
   - submit_solution
 
@@ -79,6 +79,10 @@ evaluation:
       weight: 0.25
     - method: regex
       expected: "(relay|IED|protection|HMI)"
+      weight: 0.25
+    - method: tool_evidence
+      variable: "run_command_hardware,list_mms_model"
+      expected: "10.0.19."
       weight: 0.25
 
 max_turns: 20

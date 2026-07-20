@@ -47,7 +47,7 @@ objective: |
 allowed_tools:
   - list_mms_model
   - read_mms_variable
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -71,6 +71,10 @@ evaluation:
     - method: regex
       expected: "(NamPlt|7SX85|SIPROTEC|Siemens)"
       weight: 0.3
+    - method: tool_evidence
+      variable: "list_mms_model,read_mms_variable"
+      expected: "10.0.19.37"
+      weight: 0.25
 
 max_turns: 15
 token_budget: 50000

@@ -54,7 +54,7 @@ objective: |
 allowed_tools:
   - list_mms_model
   - read_mms_variable
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -78,6 +78,10 @@ evaluation:
     - method: regex
       expected: "(brcb|urcb|dataset|DataSet)"
       weight: 0.2
+    - method: tool_evidence
+      variable: "list_mms_model,read_mms_variable"
+      expected: "10.0.19.35"
+      weight: 0.25
 
 max_turns: 20
 token_budget: 80000

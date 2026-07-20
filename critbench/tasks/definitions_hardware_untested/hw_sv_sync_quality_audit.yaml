@@ -58,7 +58,7 @@ objective: |
   Report each svID with its sync status and any anomalies detected.
 
 allowed_tools:
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -81,6 +81,10 @@ evaluation:
     - method: regex
       expected: "(PTP|clock|synchronization|time)"
       weight: 0.2
+    - method: tool_evidence
+      variable: "run_command_hardware"
+      expected: "eth2"
+      weight: 0.25
 
 max_turns: 25
 token_budget: 100000

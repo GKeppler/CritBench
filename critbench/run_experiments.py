@@ -24,6 +24,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 # Ensure critbench packages are importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -352,7 +353,8 @@ def _create_sanitised_task_yaml(
 
     # Set allowed_tools based on task type and flags
     if notools:
-        data["allowed_tools"] = ["run_command", "submit_solution"]
+        run_cmd_tool = "run_command_hardware" if data.get("type") == "hardware" else "run_command"
+        data["allowed_tools"] = [run_cmd_tool, "submit_solution"]
     elif data.get("type") == "pcap_analysis":
         data["allowed_tools"] = [
             "parse_pcap",
@@ -418,6 +420,50 @@ def _create_sanitised_task_yaml(
 # Host-side evaluation (runs AFTER the agent container exits)
 # ---------------------------------------------------------------------------
 
+def _fetch_hardware_state_from_host(task: Task) -> dict | None:
+    """Independently re-read state_check targets straight from the real IED.
+
+    Hardware tasks have no REST sidecar to poll (unlike ied-server/
+    grfics-state-api) — the device itself IS the ground truth. For every
+    ``state_check`` the task declares, shell out to the already-compiled
+    native ``mms_client`` binary (same one the agent container uses) from
+    the HOST, after the agent has exited, and read the reference fresh.
+    Never trusts anything the agent itself reported.
+    """
+    refs = [c.variable for c in (task.evaluation.checks or []) if c.type == "state_check"]
+    if not refs:
+        return None
+
+    host = str(task.environment.extra.get("ied_host", ""))
+    port = str(task.environment.extra.get("ied_mms_port", "102"))
+    values: dict[str, Any] = {}
+
+    for full_path in refs:
+        # variable is "hardware.<LD>/<LN>$<FC>$<DO>$<DA>" — strip the
+        # "hardware." prefix to get the raw MMS reference for mms_client.
+        ref = full_path.split(".", 1)[1] if full_path.startswith("hardware.") else full_path
+        cmd = ["docker", "run", "--rm", "--network", "host",
+               "critbench-agent:latest",
+               "/opt/libiec61850/bin/mms_client", "-h", host, "-p", port, "read", ref]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+            # do_read() prints "<reference> = <value>"
+            line = next((l for l in result.stdout.splitlines() if " = " in l), None)
+            if result.returncode == 0 and line:
+                value = line.split(" = ", 1)[1].strip().strip('"')
+                parts = ref.replace("/", ".").replace("$", ".").split(".")
+                cur = values
+                for p in parts[:-1]:
+                    cur = cur.setdefault(p, {})
+                cur[parts[-1]] = value
+            else:
+                log.warning("Live MMS re-read failed for %s: %s", ref, result.stderr.strip())
+        except Exception as exc:
+            log.warning("Could not run native mms_client for %s: %s", ref, exc)
+
+    return {"hardware": values}
+
+
 def _fetch_ied_state_from_host(task: Task) -> dict | None:
     """Fetch live grading state from the HOST side (via a mapped port).
 
@@ -469,9 +515,21 @@ def _run_host_side_evaluation(
     Returns the result dict.
     """
     agent_answer = agent_output.get("agent_answer", "")
-    ied_state = _fetch_ied_state_from_host(task)
+    ied_state = (
+        _fetch_hardware_state_from_host(task) if task.type == TaskType.HARDWARE
+        else _fetch_ied_state_from_host(task)
+    )
 
-    eval_result = evaluate(task, agent_answer, ied_state)
+    transcript = None
+    transcript_file = os.path.join(output_dir, "transcript.json")
+    if os.path.exists(transcript_file):
+        try:
+            with open(transcript_file) as f:
+                transcript = json.load(f)
+        except Exception as exc:
+            log.warning("Could not load transcript for evaluation: %s", exc)
+
+    eval_result = evaluate(task, agent_answer, ied_state, transcript)
 
     log.info(
         "Host evaluation: success=%s, score=%.2f, answer=%s",

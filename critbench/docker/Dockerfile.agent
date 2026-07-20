@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         tcpdump \
         iputils-ping \
         net-tools \
+        iproute2 \
+        nmap \
+        arp-scan \
         curl \
         jq \
         # Build deps for libiec61850

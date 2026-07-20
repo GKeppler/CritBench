@@ -86,7 +86,7 @@ objective: |
 allowed_tools:
   - list_mms_model
   - read_mms_variable
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -119,6 +119,10 @@ evaluation:
     - method: regex
       expected: "(IEC 61850-7-4|function.*group|classification)"
       weight: 0.15
+    - method: tool_evidence
+      variable: "list_mms_model,read_mms_variable"
+      expected: "10.0.19.3"
+      weight: 0.25
 
 max_turns: 25
 token_budget: 120000

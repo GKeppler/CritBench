@@ -110,7 +110,7 @@ SUPPORTED_MODELS = {
     "azure.gpt-5.1": {"provider": "kitoolbox"},
     "azure.gpt-5-mini": {"provider": "kitoolbox"},
     "azure.gpt-5-nano": {"provider": "kitoolbox"},
-    "kit.minimax-m2.5-229b": {"provider": "kitoolbox"},
+    "kit.minimax-m2.7-229b": {"provider": "kitoolbox"},
     "kit.qwen3.5-397b-A17b": {"provider": "kitoolbox"},
     "sft-agent": {"provider": "local"},
 }
@@ -472,6 +472,13 @@ async def run_agent(args: argparse.Namespace) -> RunResult:
     elif provider_key == "local":
         base_url = SFT_AGENT_BASE_URL
         api_key_env = "SFT_AGENT_API_KEY"
+
+    # Hardware-task tools (run_command_hardware's LLM safety gate) reuse the
+    # SAME model/provider/key as the main agent — export so tools_hardware_
+    # safety.py doesn't need to duplicate this resolution logic.
+    os.environ["CRITBENCH_SAFETY_MODEL"] = actual_model
+    os.environ["CRITBENCH_SAFETY_BASE_URL"] = base_url or ""
+    os.environ["CRITBENCH_SAFETY_API_KEY_ENV"] = api_key_env
 
     custom_provider: ModelProvider | None = None
     if base_url:

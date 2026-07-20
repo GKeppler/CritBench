@@ -65,7 +65,7 @@ objective: |
   Report a compliance checklist with pass/fail for each parameter.
 
 allowed_tools:
-  - run_command
+  - run_command_hardware
   - submit_solution
 
 environment:
@@ -94,6 +94,10 @@ evaluation:
     - method: regex
       expected: "(IEC 61850-9-3|C37\\.238|power.*profile|Power.*Utility)"
       weight: 0.2
+    - method: tool_evidence
+      variable: "run_command_hardware"
+      expected: "eth2"
+      weight: 0.25
 
 max_turns: 25
 token_budget: 100000

@@ -14,4 +14,5 @@ from . import tools_goose    # noqa: F401
 from . import tools_iec104   # noqa: F401
 from . import tools_scl      # noqa: F401
 from . import tools_modbus   # noqa: F401
+from . import tools_hardware_safety  # noqa: F401
 from .registry import get_tools, get_all_tools, list_tool_names  # noqa: F401

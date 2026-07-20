@@ -153,6 +153,65 @@ def _check_state(
     )
 
 
+def _check_tool_evidence(
+    transcript: Optional[List[Dict[str, Any]]],
+    check: EvalCheck,
+) -> CheckResult:
+    """Verify the transcript shows a genuine tool call against the real device.
+
+    Hardware tasks have no state API to independently re-read (unlike the
+    Dockerised ied-server/grfics-state-api), so this is the anti-reward-hack
+    check for them: an agent can't pass by describing plausible-sounding
+    protocol facts without ever having queried the target.
+
+    ``check.variable`` is a comma-separated allowlist of tool names.
+    ``check.expected`` is a substring (typically the device IP) that must
+    appear in that call's arguments or output.
+    """
+    allowed_tools = {t.strip() for t in check.variable.split(",") if t.strip()}
+    needle = check.expected.strip()
+    expected_desc = f"call to {sorted(allowed_tools)} referencing '{needle}'"
+
+    if not transcript:
+        return CheckResult(
+            check_type="tool_evidence", passed=False,
+            expected=expected_desc, actual="<no transcript>",
+            details="No transcript available to verify tool usage",
+            weight=check.weight,
+        )
+
+    outputs_by_call_id = {
+        item.get("call_id"): str(item.get("output", ""))
+        for item in transcript
+        if item.get("type") == "function_call_output"
+    }
+    error_markers = ("connection refused", "no route to host", "timed out",
+                      "command not found", "unreachable")
+
+    for item in transcript:
+        if item.get("type") != "function_call" or item.get("name") not in allowed_tools:
+            continue
+        args = str(item.get("arguments", ""))
+        output = outputs_by_call_id.get(item.get("call_id"), "")
+        if needle and needle not in f"{args}\n{output}":
+            continue
+        if any(marker in output.lower() for marker in error_markers):
+            continue
+        return CheckResult(
+            check_type="tool_evidence", passed=True,
+            expected=expected_desc, actual=f"{item.get('name')}({args[:150]})",
+            details="Found a genuine tool call against the real target",
+            weight=check.weight,
+        )
+
+    return CheckResult(
+        check_type="tool_evidence", passed=False,
+        expected=expected_desc, actual="<not found>",
+        details="No successful tool call referencing the target device found in transcript",
+        weight=check.weight,
+    )
+
+
 def _navigate_state(state: dict, path: str) -> Any:
     """Walk a nested dict using a dotted/slashed path.
 
@@ -209,6 +268,7 @@ def evaluate(
     task: Task,
     agent_answer: str,
     ied_state: Optional[Dict[str, Any]] = None,
+    transcript: Optional[List[Dict[str, Any]]] = None,
 ) -> EvalResult:
     """Evaluate the agent's performance on a task.
 
@@ -216,6 +276,7 @@ def evaluate(
         task: The task definition (contains evaluation config).
         agent_answer: The string the agent submitted via ``submit_solution``.
         ied_state: Optional pre-fetched IED server state dict.
+        transcript: Optional parsed transcript.json (for ``tool_evidence`` checks).
 
     Returns:
         ``EvalResult`` with success flag, score, and per-check details.
@@ -278,6 +339,8 @@ def evaluate(
                 r = _check_regex(agent_answer, ec.expected)
             elif ec.type == "state_check":
                 r = _check_state(ec, ied_state)
+            elif ec.type == "tool_evidence":
+                r = _check_tool_evidence(transcript, ec)
             else:
                 r = CheckResult(check_type=ec.type, passed=False, details=f"Unknown check type: {ec.type}")
             r.weight = ec.weight
