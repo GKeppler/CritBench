@@ -32,16 +32,23 @@ from urllib.parse import urlparse
 PLC_HOST = os.environ.get("GRFICS_MODBUS_HOST", "plc")
 PLC_PORT = int(os.environ.get("GRFICS_MODBUS_PORT", "502"))
 
+_READ_COILS = 1
 _READ_HOLDING = 3
 _READ_INPUT = 4
 
 # name -> (table, address) — kept in sync with critleayer/tools_modbus.py::POINTS
 POINTS: dict[str, tuple[str, int]] = {
+    "manual_mode": ("coil", 0),
+    "run_bit": ("coil", 40),
     "product_flow_setpoint": ("holding", 0),
     "a_setpoint": ("holding", 1),
     "pressure_sp": ("holding", 2),
     "override_sp": ("holding", 3),
     "level_sp": ("holding", 4),
+    "f1_manual_sp": ("holding", 10),
+    "f2_manual_sp": ("holding", 11),
+    "purge_manual_sp": ("holding", 12),
+    "product_manual_sp": ("holding", 13),
     "f1_valve_sp": ("holding", 100),
     "f2_valve_sp": ("holding", 101),
     "purge_valve_sp": ("holding", 102),
@@ -70,15 +77,19 @@ def _modbus_read(host: str, port: int, function_code: int, address: int) -> int:
         resp = sock.recv(260)
     if len(resp) < 9 or resp[7] & 0x80:
         raise ConnectionError("Modbus read failed")
+    if function_code == _READ_COILS:
+        return resp[9] & 1
     return struct.unpack(">H", resp[9:11])[0]
+
+
+_READ_FC = {"coil": _READ_COILS, "holding": _READ_HOLDING, "input": _READ_INPUT}
 
 
 def _build_state() -> dict:
     state = {}
     for name, (table, addr) in POINTS.items():
-        fc = _READ_HOLDING if table == "holding" else _READ_INPUT
         try:
-            state[name] = _modbus_read(PLC_HOST, PLC_PORT, fc, addr)
+            state[name] = _modbus_read(PLC_HOST, PLC_PORT, _READ_FC[table], addr)
         except Exception:
             pass  # PLC not reachable yet / register transiently unavailable
     return state

@@ -29,6 +29,8 @@ MODEL_PRICING = {
     # Anthropic (via OpenRouter)
     "anthropic/claude-sonnet-4.5": {"input": 3.00, "cached_input": 0.30, "cache_write": 3.75, "output": 15.00},
     "anthropic/claude-opus-4.5": {"input": 15.00, "cached_input": 1.50, "cache_write": 18.75, "output": 75.00},
+    # Local, self-hosted — no per-token cost.
+    "sft-agent": {"input": 0.0, "cached_input": 0.0, "cache_write": 0.0, "output": 0.0},
 }
 
 

@@ -91,6 +91,11 @@ env = jinja2.Environment(undefined=jinja2.StrictUndefined)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 KITOOLBOX_BASE_URL = "https://ki-toolbox.scc.kit.edu/api/v1"
+# host.docker.internal reaches the host machine from inside the agent
+# container (works via extra_hosts on Linux, natively on Docker Desktop).
+# `or` (not .get's default arg) because compose sets this env var to ""
+# rather than leaving it unset when the host shell doesn't export it.
+SFT_AGENT_BASE_URL = os.environ.get("SFT_AGENT_BASE_URL") or "http://host.docker.internal:8000/v1"
 
 SUPPORTED_MODELS = {
     "gpt-5.2": {"provider": "openai"},
@@ -107,6 +112,7 @@ SUPPORTED_MODELS = {
     "azure.gpt-5-nano": {"provider": "kitoolbox"},
     "kit.minimax-m2.5-229b": {"provider": "kitoolbox"},
     "kit.qwen3.5-397b-A17b": {"provider": "kitoolbox"},
+    "sft-agent": {"provider": "local"},
 }
 
 MAX_RETRY_WAIT_SECONDS = 30
@@ -463,12 +469,17 @@ async def run_agent(args: argparse.Namespace) -> RunResult:
     elif provider_key == "kitoolbox":
         base_url = KITOOLBOX_BASE_URL
         api_key_env = "KITOOLBOX_API_KEY"
+    elif provider_key == "local":
+        base_url = SFT_AGENT_BASE_URL
+        api_key_env = "SFT_AGENT_API_KEY"
 
     custom_provider: ModelProvider | None = None
     if base_url:
         openai_client = AsyncOpenAI(
             base_url=base_url,
-            api_key=os.environ.get(api_key_env, os.environ.get("OPENAI_API_KEY", "")),
+            # local servers usually don't check this; "not-needed" avoids the
+            # OpenAI client's hard error on an empty api_key.
+            api_key=os.environ.get(api_key_env) or os.environ.get("OPENAI_API_KEY") or "not-needed",
         )
 
         class _CustomProvider(ModelProvider):

@@ -105,6 +105,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - KITOOLBOX_API_KEY=${KITOOLBOX_API_KEY:-}
+      - SFT_AGENT_BASE_URL=${SFT_AGENT_BASE_URL:-}
+      - SFT_AGENT_API_KEY=${SFT_AGENT_API_KEY:-}
       - CRITBENCH_MODEL=${CRITBENCH_MODEL:-gpt-4o}
       - CRITBENCH_TASK=${CRITBENCH_TASK:-/code/tasks/GRFICSv3/grfics_modbus_recon.yaml}
       - CRITBENCH_OUTPUT=${CRITBENCH_OUTPUT:-/output}
@@ -116,6 +118,8 @@ services:
       - ../tasks/GRFICSv3:/code/tasks/GRFICSv3:ro
     networks:
       - ics-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach a local model server on the host
     restart: "no"
 
 networks:

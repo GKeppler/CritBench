@@ -4,7 +4,7 @@ Self-check for the hand-rolled Modbus TCP wire protocol in
 critleayer/tools_modbus.py (and its duplicate in docker/grfics_state_api.py).
 
 Runs a minimal fake Modbus TCP slave in-process (no GRFICSv3 containers
-needed) and asserts FC3/FC4 reads and FC6 writes round-trip correctly.
+needed) and asserts FC1/3/4/5/6 reads and writes round-trip correctly.
 
 Usage: python3 docker/test/test_modbus_wire.py
 """
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from critleayer.tools_modbus import _modbus_request  # noqa: E402
 
 
-def _fake_slave(sock: socket.socket, holding: dict[int, int], input_regs: dict[int, int]):
+def _fake_slave(sock: socket.socket, holding: dict[int, int], input_regs: dict[int, int], coils: dict[int, int]):
     # tools_modbus opens one fresh TCP connection per call, so accept in a loop.
     while True:
         try:
@@ -39,12 +39,18 @@ def _fake_slave(sock: socket.socket, holding: dict[int, int], input_regs: dict[i
                 value = count  # third field is the value for FC6
                 holding[addr] = value
                 conn.sendall(req[:12])  # FC6 response echoes the request
+            elif fc == 5:  # write single coil
+                coils[addr] = 1 if count == 0xFF00 else 0
+                conn.sendall(req[:12])  # FC5 response echoes the request
             elif fc == 3:
                 val = holding.get(addr, 0)
                 conn.sendall(req[:8] + struct.pack(">BH", 2, val))
             elif fc == 4:
                 val = input_regs.get(addr, 0)
                 conn.sendall(req[:8] + struct.pack(">BH", 2, val))
+            elif fc == 1:
+                val = coils.get(addr, 0)
+                conn.sendall(req[:8] + struct.pack(">BB", 1, val))
             else:
                 resp = bytearray(req[:9])
                 resp[7] |= 0x80
@@ -55,6 +61,7 @@ def _fake_slave(sock: socket.socket, holding: dict[int, int], input_regs: dict[i
 def main() -> None:
     holding: dict[int, int] = {2: 55295}
     input_regs: dict[int, int] = {108: 1200}
+    coils: dict[int, int] = {40: 1}
 
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -62,7 +69,7 @@ def main() -> None:
     srv.listen(1)
     host, port = srv.getsockname()
 
-    t = threading.Thread(target=_fake_slave, args=(srv, holding, input_regs), daemon=True)
+    t = threading.Thread(target=_fake_slave, args=(srv, holding, input_regs, coils), daemon=True)
     t.start()
 
     assert _modbus_request(host, port, 3, 2) == 55295, "FC3 read of pressure_sp failed"
@@ -71,7 +78,13 @@ def main() -> None:
     assert written == 60000, f"FC6 write echo mismatch: {written}"
     assert _modbus_request(host, port, 3, 2) == 60000, "FC3 read-back after write failed"
 
-    print("[PASS] Modbus TCP wire protocol: FC3 read, FC4 read, FC6 write + read-back")
+    assert _modbus_request(host, port, 1, 40) == 1, "FC1 read of run_bit failed"
+    assert _modbus_request(host, port, 1, 0) == 0, "FC1 read of manual_mode (default off) failed"
+    echoed = _modbus_request(host, port, 5, 0, True)
+    assert echoed == 1, f"FC5 write-coil echo mismatch: {echoed}"
+    assert _modbus_request(host, port, 1, 0) == 1, "FC1 read-back after FC5 write failed"
+
+    print("[PASS] Modbus TCP wire protocol: FC1/FC3/FC4 reads, FC5/FC6 writes + read-back")
 
 
 if __name__ == "__main__":

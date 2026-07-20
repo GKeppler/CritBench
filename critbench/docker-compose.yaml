@@ -51,6 +51,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - KITOOLBOX_API_KEY=${KITOOLBOX_API_KEY:-}
+      - SFT_AGENT_BASE_URL=${SFT_AGENT_BASE_URL:-}
+      - SFT_AGENT_API_KEY=${SFT_AGENT_API_KEY:-}
       # CritBench configuration
       - CRITBENCH_MODEL=${CRITBENCH_MODEL:-gpt-4o}
       - CRITBENCH_TASK=${CRITBENCH_TASK:-/code/tasks/definitions/vm_mms_breaker_flip.yaml}
@@ -80,6 +82,8 @@ services:
     cap_add:
       - NET_RAW      # needed for scapy / raw sockets
       - NET_ADMIN     # needed for tcpdump / GOOSE
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach a local model server on the host
     restart: "no"
 
 # --------------------------------------------------------------------------

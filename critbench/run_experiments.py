@@ -262,7 +262,7 @@ def run_agent_in_docker(
             ]
             print("Docker is run: ",run_cmd)
             # Forward API keys from the host environment
-            for key in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "KITOOLBOX_API_KEY"):
+            for key in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "KITOOLBOX_API_KEY", "SFT_AGENT_BASE_URL", "SFT_AGENT_API_KEY"):
                 val = os.environ.get(key)
                 if val:
                     run_cmd.extend(["-e", f"{key}={val}"])
@@ -812,7 +812,7 @@ def main():
         help="Task YAML file(s) or directory containing them",
     )
     parser.add_argument(
-        "--models", "-m", nargs="+", default=["gpt-4o"],
+        "--models", "-m", nargs="+", default=["kit.qwen3.5-397b-A17"],
         help="Model name(s) to evaluate",
     )
     parser.add_argument(
@@ -836,8 +836,8 @@ def main():
         help="Docker wall-clock timeout per run in seconds (default: 600)",
     )
     parser.add_argument(
-        "--token-budget", type=int, default=200000,
-        help="Max input tokens per run (default: 200000)",
+        "--token-budget", type=int, default=1000000,
+        help="Max input tokens per run (default: 1000000)",
     )
     parser.add_argument(
         "--max-turns", type=int, default=50,
@@ -848,11 +848,11 @@ def main():
         help="List experiments without running them",
     )
     parser.add_argument(
-        "--notools", action="store_true",
+        "--notools", default=True, action="store_true",
         help="Restrict agent to run_command and submit_solution only (ignore task-specific tools)",
     )
     parser.add_argument(
-        "--hint", action="store_true",
+        "--hint", action="store_true", default=False,
         help="Append the task's hint field to the objective text (as 'Hint: ...')",
     )
 
