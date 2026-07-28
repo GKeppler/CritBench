@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         arp-scan \
         curl \
         jq \
+        openssh-client \
         # Build deps for libiec61850
         build-essential \
         cmake \

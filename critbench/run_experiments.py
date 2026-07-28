@@ -95,6 +95,17 @@ def _task_is_grfics(task: Task) -> bool:
     return str(task.environment.extra.get("state_api", "")).startswith("http://grfics-state-api")
 
 
+def _task_is_gridnet(task: Task) -> bool:
+    """A task belongs to the multi-substation grid family — an externally managed,
+    persistent environment (a nested-KVM CTF reconstruction, not something
+    critbench's own compose files bring up or tear down). It needs no
+    ied-server/grfics-state-api dependency and no --network host: the agent
+    stays on the normal bridge network and reaches the environment via
+    host.docker.internal (see docker-compose.yaml's extra_hosts), the same
+    mechanism already used to reach a local model server on the host."""
+    return task.environment.extra.get("network_topology") == "gridnet"
+
+
 def _check_docker_images(compose_file: str = "docker-compose.yaml") -> None:
     """Verify the required Docker images exist before running experiments.
 
@@ -219,6 +230,7 @@ def run_agent_in_docker(
     needs_ied: bool = False,
     env_overrides: dict | None = None,
     host_network: bool = False,
+    extra_mounts: list[tuple[str, str]] | None = None,
 ) -> int:
     """Run the agent container with specified config. Returns exit code.
 
@@ -227,6 +239,11 @@ def run_agent_in_docker(
         needs_ied: If False, passes --no-deps to skip the ied-server dependency.
         host_network: If True, run with ``--network host`` so the container
             can reach physical devices on the host's LAN interfaces.
+        extra_mounts: Extra (host_path, container_path) read-only bind mounts,
+            e.g. an SSH private key for tasks that pivot into an externally
+            managed environment (the multi-substation grid family) reached
+            over the bridge network via host.docker.internal rather than
+            --network host.
     """
     cmd = _docker_compose_cmd(compose_file)
     env = os.environ.copy()
@@ -261,6 +278,8 @@ def run_agent_in_docker(
                 "-e", f"CRITBENCH_TASK={task_yaml}",
                 "-e", f"CRITBENCH_OUTPUT={output_dir}",
             ]
+            for host_path, container_path in (extra_mounts or []):
+                run_cmd.extend(["-v", f"{host_path}:{container_path}:ro"])
             print("Docker is run: ",run_cmd)
             # Forward API keys from the host environment
             for key in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "KITOOLBOX_API_KEY", "SFT_AGENT_BASE_URL", "SFT_AGENT_API_KEY"):
@@ -285,6 +304,8 @@ def run_agent_in_docker(
             if env_overrides:
                 for k, v in env_overrides.items():
                     run_cmd.extend(["-e", f"{k}={v}"])
+            for host_path, container_path in (extra_mounts or []):
+                run_cmd.extend(["-v", f"{host_path}:{container_path}:ro"])
             run_cmd.append("agent")
         result = subprocess.run(
             run_cmd,
@@ -377,13 +398,18 @@ def _create_sanitised_task_yaml(
             "run_command",
             "submit_solution",
         ]
-    elif data.get("type") == "vm_interaction" and not str(
-        data.get("environment", {}).get("state_api", "")
-    ).startswith("http://grfics-state-api"):
-        # GRFICSv3 (Modbus) tasks are also vm_interaction but target a
-        # different toolset (tools_modbus, not MMS/GOOSE/IEC104) — keep
-        # whatever allowed_tools their own YAML defines instead of
-        # overwriting with the IEC 61850 tool list below.
+    elif (
+        data.get("type") == "vm_interaction"
+        and not str(data.get("environment", {}).get("state_api", "")).startswith(
+            "http://grfics-state-api"
+        )
+        and data.get("environment", {}).get("network_topology") != "gridnet"
+    ):
+        # GRFICSv3 (Modbus) tasks and multi-substation grid tasks are also
+        # vm_interaction but target different toolsets (tools_modbus /
+        # plain shell, not MMS/GOOSE/IEC104) — keep whatever allowed_tools
+        # their own YAML defines instead of overwriting with the IEC 61850
+        # tool list below.
         data["allowed_tools"] = [
             'extract_goose_frames',
             'extract_mms_operations',
@@ -476,6 +502,8 @@ def _fetch_ied_state_from_host(task: Task) -> dict | None:
     """
     if task.type in (TaskType.PCAP_ANALYSIS, TaskType.SCL_ANALYSIS):
         return None
+    if _task_is_gridnet(task):
+        return None  # externally managed, no state-api sidecar to poll
 
     if _task_is_grfics(task):
         api_url, path = "http://localhost:18081", "/state"
@@ -641,7 +669,8 @@ def run_single_experiment(
         # Sanitised task YAML lives in the same per-run directory
         container_task_path = f"{container_output}/_task_sanitised.yaml"
 
-        needs_ied = task.type == TaskType.VM_INTERACTION
+        is_gridnet = _task_is_gridnet(task)
+        needs_ied = task.type == TaskType.VM_INTERACTION and not is_gridnet
         is_hardware = task.type == TaskType.HARDWARE
 
         # Use the CLI timeout as the Docker wall-clock limit
@@ -659,6 +688,16 @@ def run_single_experiment(
             if "ied_mms_port" in task.environment.extra:
                 hw_env["IED_MMS_PORT"] = str(task.environment.extra["ied_mms_port"])
 
+        # Externally managed environments (e.g. the multi-substation grid family) reach their target
+        # over SSH rather than a routed LAN — the private key lives on the
+        # host and is bind-mounted read-only into the agent container.
+        extra_mounts: list[tuple[str, str]] = []
+        if is_hardware or is_gridnet:
+            key_host_path = task.environment.extra.get("ssh_key_host_path")
+            key_container_path = task.environment.extra.get("ssh_key_container_path")
+            if key_host_path and key_container_path:
+                extra_mounts.append((key_host_path, key_container_path))
+
         rc = run_agent_in_docker(
             compose_file=config.docker_compose_file,
             model=model,
@@ -669,6 +708,7 @@ def run_single_experiment(
             needs_ied=needs_ied,
             env_overrides=hw_env if hw_env else None,
             host_network=is_hardware,
+            extra_mounts=extra_mounts or None,
         )
         summary["exit_code"] = rc
         summary["status"] = "completed" if rc == 0 else "failed"
@@ -752,10 +792,14 @@ def run_experiments(config: ExperimentConfig) -> list[dict]:
 
     # Check which tasks need a live environment stack, and which one —
     # GRFICSv3 tasks and classic IEC 61850 vm_interaction tasks are both
-    # TaskType.VM_INTERACTION but need different compose stacks.
+    # TaskType.VM_INTERACTION but need different compose stacks. The
+    # multi-substation grid family tasks are also VM_INTERACTION but need
+    # no stack at all — the environment is externally managed (a
+    # persistent nested-KVM reconstruction) and already up before
+    # critbench runs.
     vm_tasks = [t for t, _ in tasks if t.type == TaskType.VM_INTERACTION]
     grfics_tasks = [t for t in vm_tasks if _task_is_grfics(t)]
-    ied_tasks = [t for t in vm_tasks if not _task_is_grfics(t)]
+    ied_tasks = [t for t in vm_tasks if not _task_is_grfics(t) and not _task_is_gridnet(t)]
     ied_running = False
     grfics_running = False
 
