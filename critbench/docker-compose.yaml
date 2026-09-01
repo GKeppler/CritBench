@@ -53,6 +53,9 @@ services:
       - KITOOLBOX_API_KEY=${KITOOLBOX_API_KEY:-}
       - SFT_AGENT_BASE_URL=${SFT_AGENT_BASE_URL:-}
       - SFT_AGENT_API_KEY=${SFT_AGENT_API_KEY:-}
+      # Dedicated real-OpenAI key for ot_agent.py's responses.compact
+      # context-window recovery — see CRITBENCH_COMPACTION_API_KEY comment in .env
+      - CRITBENCH_COMPACTION_API_KEY=${CRITBENCH_COMPACTION_API_KEY:-}
       # CritBench configuration
       - CRITBENCH_MODEL=${CRITBENCH_MODEL:-gpt-4o}
       - CRITBENCH_TASK=${CRITBENCH_TASK:-/code/tasks/definitions/vm_mms_breaker_flip.yaml}

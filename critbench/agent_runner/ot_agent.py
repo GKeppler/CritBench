@@ -118,6 +118,126 @@ SUPPORTED_MODELS = {
 MAX_RETRY_WAIT_SECONDS = 30
 MAX_RETRIES = 5
 
+# Provider context-window overflow (e.g. litellm's ContextWindowExceededError,
+# surfaced through the Agents SDK as a plain BadRequestError) is a dead end if
+# retried as-is — the same oversized input fails identically forever, no
+# matter how long you wait. Recovery uses the Agents SDK's own compaction
+# endpoint (agents.memory.OpenAIResponsesCompactionSession calls exactly this
+# same API internally: client.responses.compact) rather than hand-rolling
+# history truncation — see _compact_history() below.
+_CONTEXT_WINDOW_ERROR_MARKERS = (
+    "contextwindowexceedederror",
+    "context_length_exceeded",
+    "context window exceeded",
+    "maximum context length",
+)
+MAX_CONTEXT_COMPACTIONS = 3
+COMPACTION_MODEL = "gpt-4.1-mini"  # cheap OpenAI model for responses.compact — independent of the task's own model
+
+
+def _is_context_window_error(exc: Exception) -> bool:
+    """True if exc is a provider context-length overflow rather than a
+    transient failure — see _CONTEXT_WINDOW_ERROR_MARKERS."""
+    msg = str(exc).lower()
+    return any(marker in msg for marker in _CONTEXT_WINDOW_ERROR_MARKERS)
+
+
+_compaction_client: AsyncOpenAI | None = None
+
+
+def _get_compaction_client() -> AsyncOpenAI:
+    """A client for responses.compact — a genuine OpenAI Responses API
+    feature, independent of whatever provider/model is actually running the
+    task. Deliberately does NOT reuse plain OPENAI_API_KEY/OPENAI_BASE_URL:
+    this project already (ab)uses OPENAI_API_KEY as an alias for whichever
+    OpenAI-compatible proxy (e.g. KI-Toolbox) is running the main task
+    model, with OPENAI_BASE_URL redirected to match — reusing it here would
+    silently send compaction requests to that proxy instead of OpenAI,
+    where responses.compact doesn't exist. CRITBENCH_COMPACTION_API_KEY is
+    a dedicated credential for exactly this call, and base_url is hardcoded
+    to the real OpenAI API regardless of any proxy redirection."""
+    global _compaction_client
+    if _compaction_client is None:
+        key = os.environ.get("CRITBENCH_COMPACTION_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        _compaction_client = AsyncOpenAI(api_key=key, base_url="https://api.openai.com/v1")
+    return _compaction_client
+
+
+def _render_history_for_summary(history: list) -> str:
+    """Flatten Responses-API input items into plain text for the summarizer."""
+    lines: list[str] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        t = item.get("type")
+        if t == "function_call":
+            lines.append(f"CALLED {item.get('name', '?')}({str(item.get('arguments', ''))[:800]})")
+        elif t == "function_call_output":
+            lines.append(f"RESULT: {str(item.get('output', ''))[:800]}")
+        elif item.get("role") in ("user", "assistant"):
+            lines.append(f"[{item['role']}]: {str(item.get('content', ''))[:800]}")
+    return "\n".join(lines)
+
+
+async def _compact_history(history: list, logger: logging.Logger) -> list | None:
+    """Shrink an oversized conversation via a real LLM summarization call —
+    not hand-rolled truncation — but as a plain message, not the Agents
+    SDK's ``responses.compact`` API. That call is Responses-API-only:
+    chat-completions models reject its opaque ``type: "compaction"`` output
+    outright ("Compaction items are not supported for chat completions",
+    agents.models.chatcmpl_converter) — confirmed against a live call. Every
+    model this project actually runs through a custom provider (KI-Toolbox,
+    OpenRouter, local SFT) goes through OpenAIChatCompletionsModel, not
+    Responses, so responses.compact's own output can never be fed back in.
+    A plain-text summary message is valid input to either API.
+
+    Returns None if summarization itself is unavailable (e.g. no working
+    key) so the caller can give up cleanly rather than layer on a second,
+    reinvented mechanism.
+    """
+    if not history:
+        return history
+
+    transcript = _render_history_for_summary(history[1:])  # history[0] is kept verbatim by the caller
+    try:
+        client = _get_compaction_client()
+        resp = await client.chat.completions.create(
+            model=COMPACTION_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Summarize the following OT security-assessment tool-call "
+                        "transcript concisely. Preserve every concrete fact "
+                        "discovered so far verbatim — credentials, IPs, hostnames, "
+                        "hashes, flags, file paths — and note what has already been "
+                        "tried (including failed attempts) so it isn't repeated. "
+                        "This summary replaces the raw transcript for an agent "
+                        "continuing the same task, so it must stay self-sufficient."
+                    ),
+                },
+                {"role": "user", "content": transcript},
+            ],
+        )
+        summary = resp.choices[0].message.content
+    except Exception as exc:
+        logger.warning("[RETRY] Compaction summarization call failed: %s: %s", type(exc).__name__, exc)
+        return None
+
+    if not summary:
+        return None
+
+    summary_item = {
+        "role": "user",
+        "content": (
+            "[Earlier tool calls were summarized because the conversation "
+            "exceeded the model's context window. This replaces the raw "
+            "transcript — continue from here.]\n\n" + summary
+        ),
+    }
+    return [history[0], summary_item]
+
+
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
@@ -130,6 +250,7 @@ class TokenBudgetExceeded(Exception):
 
 class ProcessStatus(Enum):
     COMPLETED = "completed"
+    CONTEXT_LIMIT = "context_limit"
     TOKEN_LIMIT = "token_limit"
 
 
@@ -242,6 +363,8 @@ async def run_agent_turn(
     current_text_buffer: list[str] = []
     logged_tool_calls: set = set()
     attempt = 0
+    context_compactions = 0
+    context_limit_hit = False
 
     while True:
         try:
@@ -334,6 +457,40 @@ async def run_agent_turn(
                 logger.info("[RETRY] Solution already submitted — breaking out of retry loop")
                 break
 
+            if _is_context_window_error(exc):
+                # Retrying the identical oversized input fails identically
+                # forever — nothing shrinks on its own between attempts, and
+                # waiting (the normal backoff below) doesn't help either.
+                context_compactions += 1
+                if context_compactions > MAX_CONTEXT_COMPACTIONS:
+                    logger.error(
+                        "[RETRY] Context window still exceeded after %d compaction "
+                        "attempt(s) — giving up", context_compactions - 1,
+                    )
+                    context_limit_hit = True
+                    break
+
+                base_history = input_data
+                if result_stream is not None:
+                    try:
+                        base_history = result_stream.to_input_list()
+                    except Exception:
+                        pass
+
+                logger.warning(
+                    "[RETRY] Context window exceeded — compacting conversation via "
+                    "responses.compact (attempt %d/%d)",
+                    context_compactions, MAX_CONTEXT_COMPACTIONS,
+                )
+                compacted = await _compact_history(base_history, logger)
+                if compacted is None:
+                    logger.error("[RETRY] Compaction unavailable — giving up")
+                    context_limit_hit = True
+                    break
+
+                input_data = compacted
+                continue  # retry immediately with the compacted history
+
             if attempt >= MAX_RETRIES:
                 logger.error("[RETRY] Max retries (%d) reached — giving up", MAX_RETRIES)
                 break
@@ -352,7 +509,9 @@ async def run_agent_turn(
             attempt += 1
 
     status = ProcessStatus.COMPLETED
-    if token_budget > 0 and metrics.total_input_tokens >= token_budget:
+    if context_limit_hit:
+        status = ProcessStatus.CONTEXT_LIMIT
+    elif token_budget > 0 and metrics.total_input_tokens >= token_budget:
         status = ProcessStatus.TOKEN_LIMIT
 
     return result_stream, status
@@ -539,6 +698,8 @@ async def run_agent(args: argparse.Namespace) -> RunResult:
 
         if status == ProcessStatus.TOKEN_LIMIT:
             exit_reason = "token_budget_exceeded"
+        elif status == ProcessStatus.CONTEXT_LIMIT:
+            exit_reason = "context_window_exceeded"
         else:
             # If agent didn't submit, nudge up to (max_turns - 1) more times
             current = result_stream
@@ -558,6 +719,9 @@ async def run_agent(args: argparse.Namespace) -> RunResult:
 
                 if status == ProcessStatus.TOKEN_LIMIT:
                     exit_reason = "token_budget_exceeded"
+                    break
+                elif status == ProcessStatus.CONTEXT_LIMIT:
+                    exit_reason = "context_window_exceeded"
                     break
 
             if SOLUTION_SUBMITTED is None and exit_reason == "completed":

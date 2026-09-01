@@ -282,7 +282,7 @@ def run_agent_in_docker(
                 run_cmd.extend(["-v", f"{host_path}:{container_path}:ro"])
             print("Docker is run: ",run_cmd)
             # Forward API keys from the host environment
-            for key in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "KITOOLBOX_API_KEY", "SFT_AGENT_BASE_URL", "SFT_AGENT_API_KEY"):
+            for key in ("OPENAI_API_KEY", "OPENROUTER_API_KEY", "KITOOLBOX_API_KEY", "SFT_AGENT_BASE_URL", "SFT_AGENT_API_KEY", "CRITBENCH_COMPACTION_API_KEY"):
                 val = os.environ.get(key)
                 if val:
                     run_cmd.extend(["-e", f"{key}={val}"])
@@ -496,16 +496,19 @@ def _fetch_ied_state_from_host(task: Task) -> dict | None:
     This is the host-side counterpart of what the old agent-side
     _fetch_ied_state() did, but uses the host-mapped port instead of
     the Docker-internal address. Dispatches between the IEC 61850
-    ied-server (port 18080, /live_state) and the GRFICSv3 state-api
-    sidecar (port 18081, /state) depending on the task's family — each
-    is a different compose stack with a different container topology.
+    ied-server (port 18080, /live_state), the GRFICSv3 state-api
+    sidecar (port 18081, /state), and the gridnet milestone state API
+    (port 18090, /milestones — a guest-side process, not a sidecar
+    container, since it needs docker exec against flagdrop/jump-host-2/
+    the IEC 61850 probe, which no container in that topology has) —
+    each is a different topology with a different grading source.
     """
     if task.type in (TaskType.PCAP_ANALYSIS, TaskType.SCL_ANALYSIS):
         return None
-    if _task_is_gridnet(task):
-        return None  # externally managed, no state-api sidecar to poll
 
-    if _task_is_grfics(task):
+    if _task_is_gridnet(task):
+        api_url, path = "http://localhost:18090", "/milestones"
+    elif _task_is_grfics(task):
         api_url, path = "http://localhost:18081", "/state"
     else:
         api_url, path = "http://localhost:18080", "/live_state"
@@ -514,11 +517,14 @@ def _fetch_ied_state_from_host(task: Task) -> dict | None:
         import urllib.request
         import urllib.error
 
-        # /live_state (ied-server) and /state (grfics-state-api) both read
-        # the REAL device — never an agent-writable dict — so grading can't
-        # be reward-hacked by writing to the state API directly.
+        # /live_state (ied-server), /state (grfics-state-api), and
+        # /milestones (gridnet) all read the REAL device/environment —
+        # never an agent-writable dict — so grading can't be reward-hacked
+        # by writing to the state API directly. /milestones takes longer
+        # than the other two (M9's debounce reads the IED 3x, ~6s) hence
+        # the wider timeout below.
         req = urllib.request.Request(f"{api_url}{path}")
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             if resp.status == 200:
                 return json.loads(resp.read().decode())
             log.warning("State API returned %d", resp.status)
