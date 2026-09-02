@@ -1,0 +1,45 @@
+# CritBench IEC 61850 family (tasks/vm_tasks) under Inspect.
+#
+# Adapted from ../../docker-compose.yaml. Differences, all deliberate:
+#   * `agent` renamed `default` -- Inspect's docker provider resolves the
+#     default sandbox as a service named `default`, else x-default, else first.
+#   * No API keys or CRITBENCH_* env: Inspect calls the model from the host
+#     process, so the container needs no credentials.
+#   * No `ports:` -- the scorer reads /live_state from inside the network via
+#     sandbox("ied-server").exec(), so no host port-forward is needed.
+#   * No static-IP `ipam` block. The task YAMLs address the IED by hostname
+#     (`ied_host: ied-server`), so 172.29.0.10 was never load-bearing; dropping
+#     it lets each sample get its own auto-assigned subnet, which means the 18
+#     vm_tasks can run in parallel -- the original harness must serialise them
+#     because they share one live ied-server.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    # The agent image sets ENTRYPOINT ["python","-m","agent_runner.ot_agent"],
+    # so a `command:` here would be appended as ARGUMENTS to the agent rather
+    # than replacing it -- the container exits instantly and every tool call
+    # fails. Override the entrypoint outright to keep the container alive.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    depends_on:
+      ied-server:
+        condition: service_healthy
+
+  ied-server:
+    image: critbench-ied:latest
+    x-local: true
+    hostname: ied-server
+    healthcheck:
+      # NOT curl: the critbench-ied image has no curl, so the healthcheck
+      # inherited from ../../docker-compose.yaml could never pass. It went
+      # unnoticed there because run_experiments.py probes port 18080 from the
+      # host rather than using depends_on. python3 is present in the image.
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s

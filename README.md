@@ -39,9 +39,17 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 │   ├── evaluation/          # scoring and metrics
 │   ├── docker/              # agent + IED images and compose artifacts
 │   ├── tasks/               # YAML tasks + PCAP/SCD fixtures
+│   ├── inspect_critbench/   # Inspect front-end (alternative to run_experiments.py)
 │   └── run_experiments.py   # batch orchestrator
 ├── README.md
 ```
+
+CritBench has **two interchangeable front-ends over the same tasks and the same
+grader**: the original `run_experiments.py` harness, and an
+[Inspect](https://inspect.aisi.org.uk) front-end in `inspect_critbench/`.
+Both load the same task YAMLs via `tasks/task_schema.py` and score with the
+same `evaluation/evaluator.py`, so results are comparable. See
+[Running under Inspect](#running-under-inspect).
 
 ## Quick Start
 
@@ -52,6 +60,9 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 - API key for at least one provider:
   - `OPENAI_API_KEY`
   - `OPENROUTER_API_KEY`
+
+The two front-ends need **separate environments**: `requirements.txt` pins
+`openai==1.96.1` for `openai-agents`, while Inspect requires openai 3.x.
 
 ### 2) Install
 
@@ -134,6 +145,109 @@ python run_experiments.py \
   --tasks tasks/pcaps_tasks/ \
   --models gpt-4o \
   --dry-run
+```
+
+## Running under Inspect
+
+`inspect_critbench/` exposes the benchmark as [Inspect](https://inspect.aisi.org.uk)
+tasks. It is **additive** — `run_experiments.py` and `agent_runner/ot_agent.py`
+are unchanged and still work.
+
+### Install (separate environment)
+
+```bash
+cd critbench
+python3.11 -m venv .venv-inspect
+.venv-inspect/bin/pip install -r requirements-inspect.txt
+```
+
+Build the same Docker images as above (`critbench-agent`, `critbench-ied`;
+GRFICS pulls `fortiphyd/*` and builds the state-api sidecar automatically).
+Inspect auto-loads `critbench/.env`, so existing API keys work unchanged.
+
+### Run
+
+```bash
+cd critbench
+E=inspect_critbench/evals.py
+M=openrouter/z-ai/glm-5.3-flash
+
+inspect eval $E@critbench_pcap      --model $M   # 30 PCAP analysis tasks
+inspect eval $E@critbench_scl       --model $M   # 30 SCL/SCD analysis tasks
+inspect eval $E@critbench_iec61850  --model $M   # 18 live IEC 61850 tasks
+inspect eval $E@critbench_grfics    --model $M --max-sandboxes 1   # 5 GRFICS tasks
+inspect eval $E@critbench_gridnet   --model $M --max-sandboxes 1   # 6 GridNet kill-chain tasks
+
+inspect view    # log viewer
+```
+
+Task parameters: `-T hint=true` (append the task hint, equivalent to `--hint`),
+`-T time_limit=1800`, `-T turn_limit=N`, `-T token_limit=N`.
+`--epochs N` replaces `--runs N`; `--limit N` runs only the first N samples.
+
+`critbench_gridnet` **requires an externally managed environment**: CritBench
+does not provision it. A nested-KVM guest (see `ssh_key_host_path` in
+`tasks/gridnet/*.yaml`) must already be running and forwarding SSH on host ports
+2221-2225 plus its milestone API on 18090. With it down, every sample fails on
+connection errors. It also needs `--max-sandboxes 1`, since all samples share
+that one live guest. Each sample copies its own SSH key into the sandbox
+(`Sample.files`) and `chmod 600`s it (`Sample.setup`) — the six tasks use two
+different keys at two different paths.
+
+`critbench_grfics` **requires `--max-sandboxes 1`**: its task prompts hardcode
+`192.168.95.2`, so the compose file pins that subnet and concurrent samples
+would collide on it. The other families use auto-assigned subnets and run in
+parallel — including `critbench_iec61850`, which the original harness must
+serialise because all its runs share one live `ied-server`.
+
+### How it maps
+
+| CritBench | Inspect |
+|---|---|
+| task YAML | `Sample` (prompts as chat messages) |
+| `submit_solution(answer)` | react agent's `submit` tool (`answer_only=True`) |
+| `run_command` (`--notools`) | built-in `bash` tool |
+| nudge-until-submitted loop | `react()` `on_continue` |
+| `evaluation/evaluator.py` | called verbatim inside one `@scorer` |
+| `/live_state`, `/state` host fetch | `sandbox("ied-server").exec(...)` during scoring |
+| `transcript.json` for `tool_evidence` | adapted from `TaskState.messages` |
+| `--runs N` | `--epochs N` |
+
+Scoring reports `mean` (weighted partial credit) alongside a custom
+`full_success` metric (fraction where *every* check passed). These differ on
+most multi-check tasks and the original harness tracks both too (`score` vs
+`success`).
+
+**The anti-reward-hack property is preserved.** Inspect tears sandboxes down
+only after scorers run, so the scorer re-reads real device state (`/live_state`
+for IEC 61850, a fresh Modbus poll for GRFICS) exactly as before. Ground truth
+never enters the container at all: only the YAML *path* travels in sample
+metadata and the grader re-loads the full task host-side, which makes
+`run_experiments.py`'s YAML-sanitisation step structurally unnecessary.
+
+Note that `react()` prepends **its own system prompt** ("You are a helpful
+assistant… call the submit() tool") ahead of the task's `system_prompt`. To run
+with only the task's prompt, pass
+`react(prompt=AgentPrompt(assistant_prompt=None, submit_prompt=None))`
+in `inspect_critbench/evals.py`.
+
+### Not yet ported
+
+`tasks/definitions_hardware_untested/` (20 tasks). These drive real relays over
+a physical station bus and need `network_mode: host` plus `NET_RAW`/`NET_ADMIN`,
+and a scorer that re-runs the native `mms_client` binary in the sandbox — the
+same shape as `run_experiments.py::_fetch_hardware_state_from_host`.
+
+`tool_evidence` grading itself IS ported (`inspect_critbench/scorer.py`), so
+that part is no longer a blocker: it adapts Inspect's message history to the
+Responses-API item shape `_check_tool_evidence` parses, mapping the `bash` tool
+back to the `run_command` name the task YAMLs allowlist.
+
+### Tests
+
+```bash
+.venv-inspect/bin/python tests/test_inspect_dataset.py   # no ground truth reaches the prompt
+.venv-inspect/bin/python tests/test_inspect_scorer.py    # forged claims lose the state_check weight
 ```
 
 ## Architecture

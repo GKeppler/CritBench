@@ -26,3 +26,13 @@ requests>=2.31.0         # HTTP client for IED state query endpoint
 # Testing
 pytest>=7.0.0
 pytest-asyncio>=0.23.0
+
+# ---------------------------------------------------------------------------
+# Inspect front-end (inspect_critbench/) — see requirements-inspect.txt
+#
+# Deliberately NOT listed here: Inspect needs openai 3.x, this file pins
+# openai==1.96.1 for openai-agents. The two cannot share an environment.
+# Install the Inspect front-end into its own venv:
+#     python3.11 -m venv .venv-inspect
+#     .venv-inspect/bin/pip install -r requirements-inspect.txt
+# ---------------------------------------------------------------------------

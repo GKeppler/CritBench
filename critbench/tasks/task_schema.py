@@ -239,3 +239,24 @@ def load_all_tasks(directory: str | Path) -> List[Task]:
         except Exception as exc:
             logger.warning("Skipping %s: %s", p.name, exc)
     return tasks
+
+
+def template_vars(task: Task) -> Dict[str, Any]:
+    """Jinja2 variables for rendering a task's ``system_prompt`` / ``objective``.
+
+    Shared by both front-ends — ``agent_runner/ot_agent.py`` and
+    ``inspect_critbench/dataset.py`` — so a field added to ``TaskEnvironment``
+    reaches both. Keeping two copies of this dict is how a task YAML ends up
+    rendering correctly under one harness and raising ``UndefinedError`` under
+    the other.
+    """
+    return {
+        "target_ip": task.environment.target_ip,
+        "pcap_file": task.environment.pcap_file,
+        "target_mms_port": task.environment.target_mms_port,
+        "target_104_port": task.environment.target_104_port,
+        "ied_config": task.environment.ied_config,
+        "network_interface": task.environment.network_interface,
+        "mms_client_mode": task.environment.mms_client_mode,
+        **task.environment.extra,  # includes pcap_path, ied_host, etc.
+    }

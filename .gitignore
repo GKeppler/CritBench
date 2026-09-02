@@ -21,3 +21,4 @@ dist/
 
 # Project generated outputs
 critbench/output/
+critbench/logs/

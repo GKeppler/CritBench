@@ -1,0 +1,32 @@
+# CritBench — Inspect front-end (inspect_critbench/)
+#
+# INSTALL INTO A SEPARATE ENVIRONMENT from requirements.txt.
+#
+# The two are not co-installable: requirements.txt pins `openai==1.96.1`
+# because `openai-agents<0.1.0` requires it, while Inspect's OpenAI/OpenRouter
+# provider needs openai 3.x. Installing both into one environment breaks
+# whichever was installed first.
+#
+#   python3.11 -m venv .venv-inspect
+#   .venv-inspect/bin/pip install -r requirements-inspect.txt
+#
+# The Inspect front-end deliberately does NOT need the OT protocol libraries
+# (c104, scapy, pyshark) or the agent SDK: the agent's only tools are Inspect's
+# built-in `bash` plus its `submit` tool, and all protocol work happens inside
+# the sandbox container, which already ships those binaries in its image.
+
+inspect-ai>=0.3.261
+openai>=3.0.0            # HTTP transport for Inspect's openai / openrouter providers
+
+# Used by inspect_critbench/dataset.py to load and render the task YAMLs
+# (shared with the original harness via tasks/task_schema.py).
+python-dotenv>=1.0.0     # Inspect auto-loads critbench/.env for API keys
+jinja2>=3.1.0
+pyyaml>=6.0.0
+requests>=2.31.0         # evaluation/evaluator.py fallback state fetch
+
+# NOTE on system Python: if you install with `pip install --user` onto a distro
+# Python rather than into a venv, older distro-packaged copies of `tenacity` and
+# `numpy` can satisfy pip's resolver while being too old to import under 3.11.
+# Both surface as confusing ImportErrors inside Inspect, not as missing deps.
+# `pip install --user -U tenacity numpy` fixes it; a clean venv avoids it.

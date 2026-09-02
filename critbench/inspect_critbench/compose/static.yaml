@@ -1,0 +1,23 @@
+# CritBench static families (pcap_analysis, scl_analysis) under Inspect.
+#
+# One container. The captures and SCD files are bind-mounted read-only rather
+# than copied in via Sample.files: they total 66 MB and would otherwise be
+# duplicated per sample. Neither directory contains answers, so mounting them
+# leaks nothing -- unlike the repo's evaluation code and task YAMLs, which
+# under Inspect never enter the sandbox at all.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    # The agent image sets ENTRYPOINT ["python","-m","agent_runner.ot_agent"],
+    # so a `command:` here would be appended as ARGUMENTS to the agent rather
+    # than replacing it -- the container exits instantly and every tool call
+    # fails. Override the entrypoint outright to keep the container alive.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    cap_add:
+      - NET_RAW      # tshark / scapy
+      - NET_ADMIN
+    volumes:
+      - ../../tasks/pcaps:/code/tasks/pcaps:ro
+      - ../../tasks/scd:/code/tasks/scd:ro

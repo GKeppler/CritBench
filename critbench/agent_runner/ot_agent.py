@@ -79,7 +79,7 @@ from agents import (
 # CritBench imports
 import critleayer  # triggers auto-registration of all tools
 from critleayer.registry import get_tools, get_all_tools, register_tool
-from tasks.task_schema import Task, TaskType, load_task
+from tasks.task_schema import Task, TaskType, load_task, template_vars
 from agent_runner.metrics import TokenMetrics, calculate_cost
 
 load_dotenv()
@@ -567,16 +567,7 @@ async def run_agent(args: argparse.Namespace) -> RunResult:
     tool_names = [getattr(t, "name", str(t)) for t in tools]
 
     # Collect all environment vars (known fields + extra) for Jinja2 rendering
-    _template_vars = {
-        "target_ip": task.environment.target_ip,
-        "pcap_file": task.environment.pcap_file,
-        "target_mms_port": task.environment.target_mms_port,
-        "target_104_port": task.environment.target_104_port,
-        "ied_config": task.environment.ied_config,
-        "network_interface": task.environment.network_interface,
-        "mms_client_mode": task.environment.mms_client_mode,
-        **task.environment.extra,  # includes pcap_path, ied_host, etc.
-    }
+    _template_vars = template_vars(task)
 
     # Inject hardware-related environment variables so CritLayer tools
     # (tools_mms.py, etc.) pick them up at runtime.

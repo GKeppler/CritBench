@@ -1,0 +1,92 @@
+# CritBench GRFICSv3 family (tasks/GRFICSv3) under Inspect.
+#
+# Adapted from ../../docker/docker-compose.grfics.yml, with the same changes as
+# iec61850.yaml (default service, no keys, no host ports) EXCEPT one:
+#
+# The `ipam` static-IP block is KEPT here. Unlike the IEC 61850 tasks, the
+# GRFICS task prompts hardcode `target_ip: 192.168.95.2`, and `simulation`'s
+# own unmodified entrypoint self-assigns its six field-device aliases on
+# 192.168.95.45. Those addresses are load-bearing.
+#
+# Consequence: concurrent samples would each try to create a bridge on
+# 192.168.95.0/24 and Docker refuses overlapping subnets, so this family must
+# run with `--max-sandboxes 1`. Only 5 tasks, so serialising is cheap.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    # The agent image sets ENTRYPOINT ["python","-m","agent_runner.ot_agent"],
+    # so a `command:` here would be appended as ARGUMENTS to the agent rather
+    # than replacing it -- the container exits instantly and every tool call
+    # fails. Override the entrypoint outright to keep the container alive.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      - GRFICS_MODBUS_HOST=plc
+      - GRFICS_MODBUS_PORT=502
+    depends_on:
+      grfics-state-api:
+        condition: service_healthy
+    networks:
+      - ics-net
+
+  simulation:
+    image: fortiphyd/grfics-simulation
+    hostname: simulation
+    cap_add:
+      - NET_ADMIN   # simulation's entrypoint runs `ip addr add` for its aliases
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "55555"]
+      interval: 5s
+      retries: 5
+    networks:
+      ics-net:
+        ipv4_address: 192.168.95.45
+
+  plc:
+    image: fortiphyd/grfics-plc
+    hostname: plc
+    cap_add:
+      - NET_ADMIN
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      ics-net:
+        ipv4_address: 192.168.95.2
+
+  grfics-state-api:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.grfics_state_api
+    image: critbench-grfics-state-api:latest
+    x-local: true
+    hostname: grfics-state-api
+    environment:
+      - GRFICS_MODBUS_HOST=plc
+      - GRFICS_MODBUS_PORT=502
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=3)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      plc:
+        condition: service_healthy
+    networks:
+      - ics-net
+
+networks:
+  ics-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.95.0/24
+          gateway: 192.168.95.1

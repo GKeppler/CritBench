@@ -1,0 +1,32 @@
+# CritBench gridnet family (tasks/gridnet) under Inspect.
+#
+# Unlike every other family, CritBench does NOT provision this environment. The
+# targets are ~56 containers inside a nested-KVM guest brought up by a separate
+# repo (see `ssh_key_host_path` in the task YAMLs, e.g.
+# /home/sb7059/git/CISS26/deploy/setup.sh). That guest must already be running:
+# its SSH ports (2221-2225) and its milestone API (18090) are forwarded on the
+# host, and the agent reaches them via host.docker.internal.
+#
+# So there is only ONE service here -- the agent. No ied-server, no PLC.
+#
+# The SSH key is NOT mounted here: the six tasks use two different keys at two
+# different container paths, so each Sample copies its own key in via
+# Sample.files and chmods it in Sample.setup (see dataset.py).
+#
+# Deliberately a normal bridge network, not `network_mode: host`: gridnet tasks
+# are typed vm_interaction rather than hardware precisely so the agent stays
+# sandboxed -- see tasks/gridnet/README.md.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    # See iec61850.yaml -- the agent image has an ENTRYPOINT that would
+    # otherwise swallow `command:` as its own arguments.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    extra_hosts:
+      # Reaches the KVM guest's forwarded SSH ports and its milestone API.
+      - "host.docker.internal:host-gateway"
