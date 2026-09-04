@@ -30,3 +30,8 @@ requests>=2.31.0         # evaluation/evaluator.py fallback state fetch
 # `numpy` can satisfy pip's resolver while being too old to import under 3.11.
 # Both surface as confusing ImportErrors inside Inspect, not as missing deps.
 # `pip install --user -U tenacity numpy` fixes it; a clean venv avoids it.
+
+# Optional: Inspect Scout — transcript ANALYSIS (a separate tool from the
+# `inspect view` results viewer). Used by inspect_critbench/scout_scanners.py.
+#   scout scan inspect_critbench/scout_scanners.py -T ./logs && scout view
+inspect-scout>=0.4.46

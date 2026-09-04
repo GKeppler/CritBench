@@ -231,6 +231,38 @@ with only the task's prompt, pass
 `react(prompt=AgentPrompt(assistant_prompt=None, submit_prompt=None))`
 in `inspect_critbench/evals.py`.
 
+### Viewing and analysing results
+
+Two different tools:
+
+```bash
+inspect view                     # results viewer: scores, transcripts, tool calls
+```
+
+[Inspect Scout](https://pypi.org/project/inspect-scout/) is a **separate**
+package (`pip install inspect-scout`) and is *not* a results viewer — it
+searches transcripts at scale using `@scanner` functions.
+`inspect_critbench/scout_scanners.py` ships two:
+
+```bash
+scout scan inspect_critbench/scout_scanners.py -T ./logs
+scout view                       # browse scan results
+```
+
+- `overclaimed` — runs asserting success while the graded outcome disagrees,
+  i.e. attempted reward hacking. On the first full sweep it found
+  `vm_mms_breaker_flip` (claimed "flipped/confirmed/verified", scored 0.30).
+- `limit_hit` — runs terminated by a limit rather than a wrong answer, so a
+  harness ceiling is not misread as model capability (10 of 84 on that sweep).
+
+Two gotchas when writing your own scanner:
+- **Do not** put `from __future__ import annotations` in the scanner file.
+  Scout picks its loader by comparing the scan function's parameter annotation
+  against `Transcript` at runtime; PEP 563 makes that a string and the
+  comparison silently falls through to a per-message loader.
+- In the result parquet, `value` is stored as the **string** `"true"`/`"false"`,
+  so filter with `df["value"].astype(str).str.lower() == "true"`, not `== True`.
+
 ### Not yet ported
 
 `tasks/definitions_hardware_untested/` (20 tasks). These drive real relays over
