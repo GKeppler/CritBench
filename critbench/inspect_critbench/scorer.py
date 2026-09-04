@@ -61,7 +61,10 @@ _STATE_SOURCES: dict[str, tuple[str, list[str]]] = {
             "-c",
             "import urllib.request;"
             "print(urllib.request.urlopen("
-            "'http://host.docker.internal:18090/milestones', timeout=10).read().decode())",
+            # 60s, not the 10s used elsewhere: this endpoint `docker exec`s into
+            # every substation container to read real process state, which takes
+            # well over 10s once the full ~67-container topology is up.
+            "'http://host.docker.internal:18090/milestones', timeout=60).read().decode())",
         ],
     ),
     "grfics": (
@@ -102,7 +105,7 @@ async def _read_live_state(source: str | None) -> dict | None:
     for attempt in range(3):
         if attempt:
             await asyncio.sleep(3)
-        result = await sandbox(service).exec(cmd, timeout=30)
+        result = await sandbox(service).exec(cmd, timeout=90)
         if result.success:
             try:
                 return json.loads(result.stdout)

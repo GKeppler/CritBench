@@ -143,12 +143,17 @@ def critbench_gridnet(
 ) -> Task:
     """6 multi-stage IT->OT kill-chain tasks on the GridNet substation range.
 
-    REQUIRES AN EXTERNALLY MANAGED ENVIRONMENT. CritBench does not start these
-    targets: a nested-KVM guest (see ssh_key_host_path in the task YAMLs) must
-    already be up, exposing SSH on host ports 2221-2225 and the milestone API on
-    18090. With it down, every sample fails on connection errors.
+    Requires the environment to be running first -- unlike the other families,
+    Inspect does not provision it, because it is ~56 containers rather than a
+    compose file:
 
-    Run with `--max-sandboxes 1`: all samples share that one live guest.
+        gridnet_env/bring_up_host.sh          # up   (idempotent)
+        gridnet_env/bring_up_host.sh --down   # down
+
+    That runs the topology on the host Docker daemon and serves the milestone
+    API on 18090. With it down, every sample fails on connection errors.
+
+    Run with `--max-sandboxes 1`: all samples share that one live topology.
 
     Five of six grade via `tool_evidence` (verified against the agent's real
     tool calls); `gridnet_full_chain_it_to_ot` grades against the guest-side

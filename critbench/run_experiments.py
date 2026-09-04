@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dotenv import load_dotenv
 load_dotenv()
 
-from tasks.task_schema import Task, TaskType, load_task, load_all_tasks
+from tasks.task_schema import ssh_key_paths, Task, TaskType, load_task, load_all_tasks
 from evaluation.evaluator import evaluate
 
 logging.basicConfig(
@@ -208,6 +208,91 @@ def start_grfics_stack(compose_file: str) -> None:
         f"(checked {health_url} for 180 s — plc/simulation may still be booting "
         f"or the fortiphyd images may still be pulling)"
     )
+
+
+GRIDNET_ENV_DIR = Path(__file__).resolve().parent / "gridnet_env"
+GRIDNET_STATE_API = "http://localhost:18090/health"
+
+
+def _gridnet_is_up() -> bool:
+    """True if the gridnet guest's milestone API answers on the host."""
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(GRIDNET_STATE_API, timeout=3) as resp:
+            return resp.status == 200
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def start_gridnet_stack() -> bool:
+    """Bring up the vendored gridnet environment (gridnet_env/).
+
+    Unlike the ied-server and GRFICSv3 stacks this is NOT docker compose: the
+    targets are ~56 containers inside a QEMU/KVM guest, so bring-up means
+    booting a VM and running the guest-side bring_up_*.sh scripts. That is what
+    gridnet_env/setup.sh (first run, builds the disk) and gridnet_env/launch.sh
+    (idempotent thereafter) do.
+
+    Returns True if this call started it (so the caller knows whether to leave
+    it running), False if it was already up.
+
+    Deliberately NOT torn down after a batch — see stop_gridnet_stack().
+    """
+    if _gridnet_is_up():
+        log.info("gridnet environment already up ✓")
+        return False
+
+    launch = GRIDNET_ENV_DIR / "launch.sh"
+    setup = GRIDNET_ENV_DIR / "setup.sh"
+    if not launch.is_file():
+        raise RuntimeError(
+            f"gridnet environment not vendored: {launch} is missing. "
+            f"See gridnet_env/README.md."
+        )
+
+    # setup.sh builds the 150G qcow2 and the cloud-init seed, then execs
+    # launch.sh. Once the disk exists, launch.sh alone is the idempotent path.
+    script = launch if (GRIDNET_ENV_DIR / "vm" / "disk.qcow2").is_file() else setup
+    log.info("Starting gridnet environment via %s (first boot takes several "
+             "minutes: cloud-init installs Docker, then ~2 GB of images load) …",
+             script.name)
+    subprocess.run([str(script)], check=True, cwd=str(GRIDNET_ENV_DIR))
+
+    for _ in range(60):
+        if _gridnet_is_up():
+            log.info("gridnet milestone API healthy ✓")
+            return True
+        time.sleep(5)
+    raise RuntimeError(
+        f"gridnet environment did not become healthy in time (checked "
+        f"{GRIDNET_STATE_API} for 300 s). Check gridnet_env/vm/serial.log."
+    )
+
+
+def stop_gridnet_stack() -> None:
+    """Intentionally a no-op — the gridnet guest is left running.
+
+    Two reasons not to tear it down:
+
+    1. Boot is expensive (cloud-init, Docker bootstrap, ~2 GB of image loads,
+       then 56 containers), so shutting down between batches would dominate
+       runtime.
+    2. State does not reset by restarting. Driving an XCBR breaker re-dispatches
+       the pandapower model, and closing the breaker again does not restore the
+       previous load flow (upstream verified 0.255437 -> 0.000000 -> 0.019981;
+       neither a simulator nor an IED restart brings it back). The only true
+       reset is a QEMU savevm snapshot:
+
+           gridnet_env/launch.sh --snapshot clean     # once, after bring-up
+           gridnet_env/launch.sh --revert  clean      # before each graded run
+
+       So for comparable runs, revert to a snapshot rather than expecting this
+       function to clean up.
+    """
+    log.info("Leaving gridnet environment running (revert a snapshot for a "
+             "clean state — see stop_gridnet_stack docstring)")
 
 
 def stop_grfics_stack(compose_file: str) -> None:
@@ -699,8 +784,7 @@ def run_single_experiment(
         # host and is bind-mounted read-only into the agent container.
         extra_mounts: list[tuple[str, str]] = []
         if is_hardware or is_gridnet:
-            key_host_path = task.environment.extra.get("ssh_key_host_path")
-            key_container_path = task.environment.extra.get("ssh_key_container_path")
+            key_host_path, key_container_path = ssh_key_paths(task)
             if key_host_path and key_container_path:
                 extra_mounts.append((key_host_path, key_container_path))
 
@@ -805,6 +889,7 @@ def run_experiments(config: ExperimentConfig) -> list[dict]:
     # critbench runs.
     vm_tasks = [t for t, _ in tasks if t.type == TaskType.VM_INTERACTION]
     grfics_tasks = [t for t in vm_tasks if _task_is_grfics(t)]
+    gridnet_tasks = [t for t in vm_tasks if _task_is_gridnet(t)]
     ied_tasks = [t for t in vm_tasks if not _task_is_grfics(t) and not _task_is_gridnet(t)]
     ied_running = False
     grfics_running = False
@@ -819,6 +904,8 @@ def run_experiments(config: ExperimentConfig) -> list[dict]:
         if ied_tasks and not config.dry_run:
             start_ied_server(config.docker_compose_file)
             ied_running = True
+        if gridnet_tasks and not config.dry_run:
+            start_gridnet_stack()
         if grfics_tasks and not config.dry_run:
             start_grfics_stack(config.docker_compose_file)
             grfics_running = True

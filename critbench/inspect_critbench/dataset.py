@@ -9,7 +9,7 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.model import ChatMessageSystem, ChatMessageUser
 from jinja2 import Environment, StrictUndefined
 
-from tasks.task_schema import load_task, template_vars
+from tasks.task_schema import load_task, ssh_key_paths, template_vars
 
 # StrictUndefined matches ot_agent.py: an unresolved {{ var }} is a hard error,
 # never a silently empty prompt.
@@ -48,8 +48,7 @@ def critbench_dataset(family: str, hint: bool = False) -> MemoryDataset:
         # it per sample rather than bind-mounting in the compose file: the six
         # gridnet tasks use two different keys at two different paths.
         files, setup = {}, None
-        key_host = task.environment.extra.get("ssh_key_host_path")
-        key_container = task.environment.extra.get("ssh_key_container_path")
+        key_host, key_container = ssh_key_paths(task)
         if key_host and key_container:
             files[str(key_container)] = str(key_host)
             # OpenSSH refuses a key with group/world-readable permissions, and

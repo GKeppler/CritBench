@@ -241,6 +241,31 @@ def load_all_tasks(directory: str | Path) -> List[Task]:
     return tasks
 
 
+CRITBENCH_ROOT = Path(__file__).resolve().parent.parent
+"""The ``critbench/`` directory — the package root, not the git root."""
+
+
+def ssh_key_paths(task: Task) -> tuple[Optional[str], Optional[str]]:
+    """Resolve a task's SSH key pair to ``(absolute_host_path, container_path)``.
+
+    ``ssh_key_host_path`` may be given relative to ``critbench/`` (the portable
+    form used by the vendored ``gridnet_env/``) or absolute (for an externally
+    managed environment). Both consumers need it absolute: Docker bind mounts
+    reject relative paths, and Inspect's ``Sample.files`` resolves against the
+    process CWD rather than the task file.
+
+    Returns ``(None, None)`` unless the task declares both halves.
+    """
+    host = task.environment.extra.get("ssh_key_host_path")
+    container = task.environment.extra.get("ssh_key_container_path")
+    if not host or not container:
+        return None, None
+    path = Path(str(host))
+    if not path.is_absolute():
+        path = CRITBENCH_ROOT / path
+    return str(path), str(container)
+
+
 def template_vars(task: Task) -> Dict[str, Any]:
     """Jinja2 variables for rendering a task's ``system_prompt`` / ``objective``.
 
