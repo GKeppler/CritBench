@@ -102,7 +102,7 @@ environment:
   ssh_port: 2225
   ssh_user: "agent"
   ssh_key_container_path: "/creds/gridnet_attacker_key"
-  ssh_key_host_path: "/home/sb7059/git/CISS26/deploy/workspace/seed/attacker_key"
+  ssh_key_host_path: "gridnet_env/workspace/seed/attacker_key"
   network_topology: "gridnet"
 
 evaluation:

@@ -40,6 +40,7 @@ CritBench currently contains 81 task definitions across static and dynamic setti
 │   ├── docker/              # agent + IED images and compose artifacts
 │   ├── tasks/               # YAML tasks + PCAP/SCD fixtures
 │   ├── inspect_critbench/   # Inspect front-end (alternative to run_experiments.py)
+│   ├── gridnet_env/         # vendored GridNet KVM environment (see its README)
 │   └── run_experiments.py   # batch orchestrator
 ├── README.md
 ```
@@ -185,14 +186,43 @@ Task parameters: `-T hint=true` (append the task hint, equivalent to `--hint`),
 `-T time_limit=1800`, `-T turn_limit=N`, `-T token_limit=N`.
 `--epochs N` replaces `--runs N`; `--limit N` runs only the first N samples.
 
-`critbench_gridnet` **requires an externally managed environment**: CritBench
-does not provision it. A nested-KVM guest (see `ssh_key_host_path` in
-`tasks/gridnet/*.yaml`) must already be running and forwarding SSH on host ports
-2221-2225 plus its milestone API on 18090. With it down, every sample fails on
-connection errors. It also needs `--max-sandboxes 1`, since all samples share
-that one live guest. Each sample copies its own SSH key into the sandbox
-(`Sample.files`) and `chmod 600`s it (`Sample.setup`) — the six tasks use two
-different keys at two different paths.
+`critbench_gridnet` runs against the environment vendored in
+`critbench/gridnet_env/` — ~56 containers modelling a 7-substation grid. Start
+it first; it is not a compose file, so neither front-end provisions it as part
+of a sandbox:
+
+```bash
+critbench/gridnet_env/bring_up_host.sh          # up (idempotent)
+critbench/gridnet_env/bring_up_host.sh --down   # down
+```
+
+This runs everything on the **host Docker daemon**. The topology was originally
+brought up inside a QEMU/KVM guest (`gridnet_env/launch.sh`), but that guest
+existed only to supply a Docker daemon — every target is a container — so the
+host path drops it, along with the `qemu-system-x86_64` / `xorriso` / `/dev/kvm`
+requirements and the 38 GB disk image. Ports are identical either way
+(2221-2224 jump boxes, 2225 agent foothold, 18090 milestone API), so the task
+YAMLs are unchanged. `gridnet_env/loot/` (9 CTF images, 1.9 GB) is still needed
+and is not in git — see [gridnet_env/README.md](critbench/gridnet_env/README.md).
+
+It needs `--max-sandboxes 1`, since all samples share that one live topology.
+Each sample copies its own SSH key into the sandbox (`Sample.files`) and `chmod
+600`s it (`Sample.setup`) — the six tasks use two different keys.
+
+**Resetting process state between graded runs.** This is the one capability
+lost by dropping the VM. Restarting containers does not reset the simulation:
+driving an XCBR breaker re-dispatches the pandapower load flow, and closing the
+breaker again does not restore the prior state. Under KVM this was solved with
+`launch.sh --snapshot clean` / `--revert clean`. On host Docker there is no
+equivalent, so for a clean comparison across runs tear the topology down and
+bring it back up:
+
+```bash
+gridnet_env/bring_up_host.sh --down && gridnet_env/bring_up_host.sh
+```
+
+That is slower than a snapshot revert (image load is cached, container creation
+is not) and has not yet been verified to restore identical initial state.
 
 `critbench_grfics` **requires `--max-sandboxes 1`**: its task prompts hardcode
 `192.168.95.2`, so the compose file pins that subnet and concurrent samples

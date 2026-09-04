@@ -1,0 +1,3 @@
+[submodule "critbench/gridnet_env"]
+	path = critbench/gridnet_env
+	url = git@github.com:GKeppler/gridnet.git

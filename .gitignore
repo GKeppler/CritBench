@@ -22,3 +22,15 @@ dist/
 # Project generated outputs
 critbench/output/
 critbench/logs/
+# --- gridnet environment (critbench/gridnet_env/) ---------------------------
+# Derived artifacts, rebuilt by gridnet_env/setup.sh from the Ubuntu cloud
+# image. ~38 GB — never commit.
+critbench/gridnet_env/vm/
+critbench/gridnet_env/workspace/**/*.log
+
+# The 9 CTF container images (~1.9 GB of docker-save tarballs). These are
+# SOURCE, not derived — they cannot be rebuilt from a Dockerfile — but this
+# repo has no git-lfs and a 20 MB history, so committing them would make every
+# clone painful. Kept out of git; see gridnet_env/README.md for how to obtain
+# them. Without loot/, the gridnet family cannot be brought up.
+critbench/gridnet_env/loot/
