@@ -53,17 +53,23 @@ hint: |
 
   Stage 2 — the domain controller at 10.1.2.5 has an anonymously readable SMB
   share left over from a backup job. `apk add samba-client` works on your box
-  (it has outbound internet). The share holds a tarball of the DC's private
-  directory. Take the whole thing: `sam.ldb` alone is only a partition index and
-  contains no accounts — the users and their hashes live in
-  `private/sam.ldb.d/DC=CTF,DC=LOCAL.ldb`.
+  (it has outbound internet). Take everything on the share, not just the obvious
+  file. It holds a tarball of the DC's private directory — and `sam.ldb` alone
+  is only a partition index and contains no accounts, the users and their hashes
+  live in `private/sam.ldb.d/DC=CTF,DC=LOCAL.ldb`.
 
   Stage 3 — that DC was provisioned without secrets encryption, so `unicodePwd`
   sits in the database as an ordinary NT hash (MD4 of the UTF-16LE password).
-  Find the hash near the `svc-otmaint` account record and crack it. The password
-  is a common corporate-style one; a small wordlist is enough. Note that Alpine's
+  Find the hash near the `svc-otmaint` account record and crack it. Do not
+  bother with stock wordlists: the password is not in one, and it is not on the
+  share verbatim either. The other documents on that share tell you how the
+  service accounts were changed after the last audit — generate your candidates
+  from that and the password is a few hundred guesses away. Note that Alpine's
   Python has no MD4 in hashlib, so bring your own implementation or your own
   cracker.
+
+  The domain has an account-lockout policy, so guessing against the DC over the
+  network is not an alternative to cracking the hash offline.
 
   Stage 4 — those same credentials are accepted by SSH on jump-host-2
   (10.1.9.10, port 2222, user `otmaint`, password auth enabled). That host is

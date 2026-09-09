@@ -79,7 +79,9 @@ dump) — every other task is graded the way the `hardware` family is
 (`contains`/`regex`/`tool_evidence` against the agent's report and
 transcript), not against a fabricated flag.
 
-## Known gap
+
+
+## Known gap for "yaml_old" tasks
 
 Unlike GRFICS/IEC 61850, there's no `state_api` sidecar or host-side
 re-read here (`_fetch_ied_state_from_host` short-circuits to `None` for
@@ -88,6 +90,4 @@ exist). Grading is therefore `tool_evidence`-based (proof the agent's
 transcript actually touched the real target, not just a plausible-sounding
 claim) plus structural `contains`/`regex` checks on the reported answer —
 the same anti-reward-hack tier the `hardware` family already uses, just not
-the stronger live-re-read tier GRFICS/IEC61850 get. If this family grows, a
-real fix would be a small SSH-aware re-read helper (open the same key, hop
-the same path, re-query) rather than trusting the agent's report outright.
+the stronger live-re-read tier GRFICS/IEC61850 get. 

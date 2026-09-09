@@ -32,9 +32,11 @@ if str(_CRITBENCH_ROOT) not in sys.path:
 
 from inspect_ai import Task, task
 from inspect_ai.agent import AgentSubmit, react
+from inspect_ai.solver import Solver
 from inspect_ai.tool import bash
 
 from inspect_critbench.dataset import critbench_dataset
+from inspect_critbench.gridnet_range import gridnet_reset
 from inspect_critbench.scorer import critbench_scorer
 
 _COMPOSE = Path(__file__).resolve().parent / "compose"
@@ -63,9 +65,16 @@ def _critbench_task(
     token_limit: int,
     time_limit: int,
     bash_timeout: int,
+    setup: Solver | None = None,
 ) -> Task:
     return Task(
         dataset=critbench_dataset(family, hint=hint),
+        # Task.setup, not the head of the solver chain: Inspect documents it as
+        # the step that "should not be substituted when another solver is used
+        # with the task", i.e. it still runs under `inspect eval --solver ...`.
+        # Environment preparation is exactly that -- an agent swapped in from
+        # the CLI must not silently inherit the previous sample's range.
+        setup=setup,
         solver=react(tools=[bash(timeout=bash_timeout)], submit=_SUBMIT),
         scorer=critbench_scorer(state_source=state_source),
         sandbox=("docker", str(_COMPOSE / compose)),
@@ -138,31 +147,48 @@ def critbench_gridnet(
     hint: bool = False,
     turn_limit: int = 80,
     token_limit: int = 10_000_000,
-    time_limit: int = 1800,
+    # 3600, not the 1800 the agent gets: the first step of every sample is a
+    # full range reset (~618 s measured), and the sample-level time limit covers
+    # the whole solver chain.
+    time_limit: int = 3600,
     bash_timeout: int = 300,
+    reset_timeout: int = 1800,
 ) -> Task:
     """6 multi-stage IT->OT kill-chain tasks on the GridNet substation range.
 
-    Requires the environment to be running first -- unlike the other families,
-    Inspect does not provision it, because it is ~56 containers rather than a
-    compose file:
+    The range itself is ~56 containers on the host Docker daemon rather than a
+    compose file, so Inspect does not *provision* it -- bring it up once:
 
         gridnet_env/bring_up_host.sh          # up   (idempotent)
         gridnet_env/bring_up_host.sh --down   # down
 
-    That runs the topology on the host Docker daemon and serves the milestone
-    API on 18090. With it down, every sample fails on connection errors.
+    but every sample then RE-CREATES it in `Task.setup`, because three of the
+    four graded milestones survive a run and would otherwise be scored as the
+    next agent's work (see gridnet_range.py). That costs ~10 min per sample and
+    is not optional: the reset also asserts the range came back ready and clean,
+    and raises rather than letting a sample start from a used one.
 
-    Run with `--max-sandboxes 1`: all samples share that one live topology.
+    Run with `--max-sandboxes 1`. That is what serialises the samples: the
+    sandbox semaphore is held for the whole sample (solvers *and* scorers), and
+    Inspect documents that "when a max_sandboxes is applied this effectively
+    creates a global max_samples limit that is equal to the max_sandboxes".
+    Without it, one sample's reset tears the range down under another's agent.
 
     Five of six grade via `tool_evidence` (verified against the agent's real
-    tool calls); `gridnet_full_chain_it_to_ot` grades against the guest-side
-    milestone API.
+    tool calls); `gridnet_full_chain_it_to_ot` grades against the milestone API,
+    read host-side.
     """
+    script = _CRITBENCH_ROOT / "gridnet_env" / "bring_up_host.sh"
+    if not script.exists():
+        raise FileNotFoundError(
+            f"{script} not found -- gridnet_env is a submodule: "
+            "`git submodule update --init`"
+        )
     return _critbench_task(
         "gridnet", "gridnet.yaml", "gridnet",
         hint=hint, turn_limit=turn_limit, token_limit=token_limit,
         time_limit=time_limit, bash_timeout=bash_timeout,
+        setup=gridnet_reset(str(script), timeout=reset_timeout),
     )
 
 

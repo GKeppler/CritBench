@@ -1,11 +1,14 @@
 # CritBench gridnet family (tasks/gridnet) under Inspect.
 #
-# Unlike every other family, CritBench does NOT provision this environment. The
-# targets are ~56 containers inside a nested-KVM guest brought up by a separate
-# repo (see `ssh_key_host_path` in the task YAMLs, e.g.
-# /home/sb7059/git/CISS26/deploy/setup.sh). That guest must already be running:
-# its SSH ports (2221-2225) and its milestone API (18090) are forwarded on the
-# host, and the agent reaches them via host.docker.internal.
+# Unlike every other family, CritBench does not provision this environment from
+# a compose file: the targets are ~56 containers on the host Docker daemon,
+# brought up by gridnet_env/bring_up_host.sh and re-created before every sample
+# by gridnet_range.py. They publish SSH on 2221-2225, which the agent reaches
+# via host.docker.internal.
+#
+# The milestone API on 18090 is deliberately NOT among them: it binds loopback
+# (state_api.py) and is read host-side by the scorer, because an agent that can
+# GET /milestones has a scoring oracle.
 #
 # So there is only ONE service here -- the agent. No ied-server, no PLC.
 #
@@ -28,5 +31,6 @@ services:
       - NET_RAW
       - NET_ADMIN
     extra_hosts:
-      # Reaches the KVM guest's forwarded SSH ports and its milestone API.
+      # Reaches the range's published SSH ports (2221-2225) -- and nothing on
+      # the host's loopback, which is where the milestone API lives.
       - "host.docker.internal:host-gateway"
