@@ -1,0 +1,20 @@
+{
+  "pcap": {
+    "started_utc": "2026-09-24T08:12:03.905759+00:00",
+    "status": "finished",
+    "exit_code": 1,
+    "finished_utc": "2026-09-24T08:12:08.686592+00:00"
+  },
+  "scl": {
+    "started_utc": "2026-09-24T08:12:08.687041+00:00",
+    "status": "finished",
+    "exit_code": 1,
+    "finished_utc": "2026-09-24T08:12:13.212449+00:00"
+  },
+  "vm": {
+    "started_utc": "2026-09-24T08:12:13.213092+00:00",
+    "status": "finished",
+    "exit_code": 0,
+    "finished_utc": "2026-09-24T08:40:26.430855+00:00"
+  }
+}

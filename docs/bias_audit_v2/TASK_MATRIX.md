@@ -1,0 +1,59 @@
+# Task-by-task adjudicated ratings
+
+Task-local ratings; apply shared H1–H7 findings in HARNESS_REVIEW.md as well. P/PP/NP/U/NA definitions are in RUBRIC.md. No summed bias score. Primary family reports are retained; adjudications below take precedence.
+
+| Task | Family | P1 | P2 | P3 | P4 | P5 | P6 | P7 | P8 | P9 | P10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| hw_goose_publisher_census | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_mms_dataset_audit | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_mms_rcb_enumeration | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_mms_server_model | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_ptp_grandmaster_identity | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_station_bus_asset_survey | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_sv_stream_census | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| hw_sv_sync_quality_audit | hardware | U | U | U | U | U | U | PP | NA | U | PP |
+| pcap_appid_collisions | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_goose_publisher_map | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_goose_stream_inventory | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_goose_takeover_preconditions | pcap | NP | NP | U | U | U | U | PP | NA | NP | PP |
+| pcap_mms_endpoints | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_mms_logical_devices | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_mms_rcb_usage | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_redundancy_nodes | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_sv_sample_rates | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_sv_spoof_preconditions | pcap | NP | NP | U | U | U | U | PP | NA | NP | PP |
+| pcap_sv_stream_inventory | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_sv_sync_audit | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_tal_audit | pcap | NP | NP | U | U | U | U | PP | NA | NP | NP |
+| pcap_time_source_dependency | pcap | NP | P | U | U | U | U | P | NA | NP | NP |
+| pcap_trip_event_reconstruction | pcap | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| pcap_unmanaged_publishers | pcap | PP | NP | U | U | U | U | PP | NA | NP | NP |
+| scl_bay_primary_equipment | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_breaker_control_binding | scl | NP | PP | U | U | U | U | PP | NA | NP | NP |
+| scl_cross_file_goose_delta | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_cross_file_ied_delta | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_goose_addressing_conflicts | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_goose_publication_map | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_goose_spoof_preconditions | scl | NP | NP | U | U | U | U | PP | NA | NP | PP |
+| scl_goose_subscription_graph | scl | NP | PP | U | U | U | U | PP | NA | NP | NP |
+| scl_ied_inventory | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_multihomed_ieds | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_process_to_breaker_path | scl | NP | NP | U | U | U | U | PP | NA | NP | NP |
+| scl_protection_ln_inventory | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_relay_ld_architecture | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_setting_group_exposure | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_subnetwork_attachment | scl | NP | NP | U | U | U | U | NP | NA | NP | NP |
+| scl_sv_stream_config | scl | NP | P | U | U | U | U | P | NA | NP | NP |
+| scl_switchgear_control_surface | scl | NP | PP | U | U | U | U | PP | NA | NP | P |
+| scl_unbound_subscriptions | scl | NP | NP | U | U | U | U | PP | NA | NP | NP |
+| scl_unsegregated_streams | scl | NP | PP | U | U | U | U | PP | NA | NP | NP |
+| vm_coordinated_dual_protocol | vm | NP | PP | U | U | U | U | PP | NA | NP | PP |
+| vm_cross_protocol_surface | vm | NP | NP | U | U | U | U | PP | NA | NP | U |
+| vm_iec104_command_execute | vm | NP | PP | U | U | U | U | PP | NA | NP | U |
+| vm_iec104_point_inventory | vm | NP | PP | U | U | U | U | PP | NA | NP | U |
+| vm_iec104_setpoint_write | vm | NP | PP | U | U | U | U | PP | NA | NP | U |
+| vm_mms_indication_force | vm | NP | PP | U | U | U | U | PP | NA | NP | PP |
+| vm_mms_measurement_spoof | vm | NP | NP | U | U | U | U | NP | NA | NP | PP |
+| vm_mms_model_discovery | vm | NP | P | U | U | U | U | P | NA | NP | U |
+| vm_mms_protection_desensitise | vm | NP | P | U | U | U | U | P | NA | P | PP |
+| vm_protection_setting_read | vm | NP | PP | U | U | U | U | PP | NA | NP | U |

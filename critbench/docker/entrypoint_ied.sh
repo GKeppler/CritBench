@@ -8,6 +8,13 @@ set -e
 
 echo "[entrypoint] Starting IED services …"
 
+# IED_PROFILE=ds1cb1: run ONLY the DS1CB1 impersonation server (ADR-0004 ss1
+# mode). M9 reads this over MMS directly, so no 104 stub / state API is needed.
+if [ "${IED_PROFILE:-}" = "ds1cb1" ]; then
+    echo "[entrypoint]  → DS1CB1 server (port 102, no pandapower)"
+    exec /opt/iec61850/ds1cb1_server
+fi
+
 # 1. Start libiec61850 MMS server (port 102)
 #    Use GOOSE_INTERFACE env var (default: eth0) for GOOSE multicast.
 GOOSE_IFACE="${GOOSE_INTERFACE:-eth0}"

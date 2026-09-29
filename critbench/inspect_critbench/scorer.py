@@ -28,6 +28,7 @@ from inspect_ai.util import sandbox
 
 from evaluation.evaluator import evaluate
 from tasks.task_schema import load_task
+from inspect_critbench.v2_metrics import summarize
 
 # Container-hosted grading sources, keyed by the value an @task passes.
 #
@@ -238,7 +239,15 @@ def critbench_scorer(state_source: str | None = None) -> Scorer:
         # Most families mix state_check and text-only tasks (9 of 18 vm_tasks,
         # 1 of 6 gridnet), and a text-only task must not fail just because a
         # state API it never needed happens to be down.
-        needs_state = any(c.type == "state_check" for c in task.evaluation.checks)
+        # v1 declares its device checks in `evaluation.checks` as `state_check`;
+        # v2's structured tasks declare them in `evaluation.fields` as
+        # `live_state`. Missing the second form silently skipped the device read
+        # and scored every v2 action task as "no trusted state available" --
+        # while the agent had in fact performed the write and read it back.
+        needs_state = (
+            any(c.type == "state_check" for c in task.evaluation.checks)
+            or any(f.get("check") == "live_state" for f in task.evaluation.fields)
+        )
         live_state = await read_live_state(state_source) if needs_state else None
 
         transcript = _transcript_from_messages(state.messages)
@@ -260,7 +269,27 @@ def critbench_scorer(state_source: str | None = None) -> Scorer:
             # normalises by the sum of weights). Keeping the raw state here is
             # what makes "which route did this run take" a recorded fact rather
             # than something to reconstruct from transcripts afterwards.
-            metadata={**result.to_dict(), "live_state": live_state},
+            metadata={**result.to_dict(), "live_state": live_state,
+                      **{key: state.metadata[key] for key in
+                         ("benchmark_version", "floor_control", "fixture_ids", "family", "hint_level")
+                         if key in state.metadata}},
         )
 
     return score
+
+
+@metric
+def v2_summary() -> Metric:
+    """Exclude floor controls and group uncertainty by overlapping fixtures."""
+    def compute(scores: list[SampleScore]) -> dict[str, float]:
+        rows = []
+        for sample in scores:
+            metadata = sample.score.metadata or {}
+            if metadata.get("benchmark_version") != 2:
+                raise ValueError("v2 metrics require v2 score metadata")
+            rows.append({"score": float(sample.score.value),
+                         "success": metadata["success"],
+                         "floor_control": metadata["floor_control"],
+                         "fixture_ids": metadata["fixture_ids"]})
+        return summarize(rows)
+    return compute

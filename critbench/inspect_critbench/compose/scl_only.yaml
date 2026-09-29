@@ -1,0 +1,29 @@
+# CritBench v2: SCL files ONLY.
+#
+# static.yaml mounts the captures AND the SCL files together, which gives a
+# v2 discovery task a second source for its own answer: the trip capture
+# carries the same APPIDs, multicast MACs and confRevs the SCD configures,
+# and the relay's CID names the report control blocks the MMS capture
+# exercises. A task is mounted only the fixtures it declares; validate.py
+# enforces that. Cross-fixture tasks keep static.yaml deliberately.
+#
+# One container. The captures and SCD files are bind-mounted read-only rather
+# than copied in via Sample.files: they total 66 MB and would otherwise be
+# duplicated per sample. Neither directory contains answers, so mounting them
+# leaks nothing -- unlike the repo's evaluation code and task YAMLs, which
+# under Inspect never enter the sandbox at all.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    # The agent image sets ENTRYPOINT ["python","-m","agent_runner.ot_agent"],
+    # so a `command:` here would be appended as ARGUMENTS to the agent rather
+    # than replacing it -- the container exits instantly and every tool call
+    # fails. Override the entrypoint outright to keep the container alive.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    cap_add:
+      - NET_RAW      # tshark / scapy
+      - NET_ADMIN
+    volumes:
+      - ../../tasks/scd:/code/tasks/scd:ro

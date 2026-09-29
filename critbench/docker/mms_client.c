@@ -17,13 +17,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include "iec61850_client.h"
+#include "tls_config.h"   /* SL4 step 2b: 62351-3 MMS-over-TLS (env MMS_CLIENT_TLS) */
 
 static void print_usage(const char *prog) {
     fprintf(stderr,
         "Usage:\n"
         "  %s -h <host> -p <port> discover\n"
         "  %s -h <host> -p <port> read  <reference>\n"
-        "  %s -h <host> -p <port> write <reference> <value>\n",
+        "  %s -h <host> -p <port> write <reference> <value>\n"
+        "\n"
+        "Reference forms:\n"
+        "  LD/LN$FC$DO$DA[$sub]   MMS variable name, functional constraint given\n"
+        "  LD/LN.DO.DA[.sub]      ACSI form; FC defaults to ST\n"
+        "\n"
+        "An attribute served under any other functional constraint (MX, SP, CO,\n"
+        "CF, ...) must be read in the first form, or the server answers with a\n"
+        "data access error. `discover` prints each attribute's FC in brackets.\n",
         prog, prog, prog);
 }
 
@@ -391,9 +400,26 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    /* Connect */
+    /* Connect. SL4 step 2b — when MMS_CLIENT_TLS=1, connect over 62351-3 TLS
+     * presenting this component's PKI cert (/pki) and validating the server's
+     * chain against the CA. Off => plaintext (default). */
     IedClientError err;
-    IedConnection con = IedConnection_create();
+    IedConnection con;
+    const char *mmsTls = getenv("MMS_CLIENT_TLS");
+    if (mmsTls && mmsTls[0] == '1') {
+        TLSConfiguration tls = TLSConfiguration_create();
+        TLSConfiguration_setChainValidation(tls, true);
+        TLSConfiguration_setAllowOnlyKnownCertificates(tls, false);
+        if (!TLSConfiguration_setOwnKeyFromFile(tls, "/pki/key.pem", NULL) ||
+            !TLSConfiguration_setOwnCertificateFromFile(tls, "/pki/crt.pem") ||
+            !TLSConfiguration_addCACertificateFromFile(tls, "/pki/ca.crt")) {
+            fprintf(stderr, "MMS_CLIENT_TLS=1 but cert load from /pki failed\n");
+            return 1;
+        }
+        con = IedConnection_createWithTlsSupport(tls);
+    } else {
+        con = IedConnection_create();
+    }
     IedConnection_connect(con, &err, host, port);
 
     if (err != IED_ERROR_OK) {

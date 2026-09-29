@@ -121,6 +121,9 @@ class CheckResult:
     actual: str = ""
     details: str = ""
     weight: float = 1.0
+    # Fractional credit for set-valued structured checks (ADR-0003 §5). None on
+    # every v1 check type, where credit is all-or-nothing and `passed` is it.
+    partial: Optional[float] = None
 
 
 @dataclass
@@ -142,6 +145,7 @@ class EvalResult:
                     "actual": c.actual[:500],
                     "details": c.details[:500],
                     "weight": c.weight,
+                    **({"partial": round(c.partial, 4)} if c.partial is not None else {}),
                 }
                 for c in self.details
             ],

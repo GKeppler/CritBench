@@ -1,0 +1,126 @@
+{
+ "drifting": [
+  "mms.simpleIOGenericIO.GGIO1.MX.AnIn1.mag.f",
+  "mms.simpleIOGenericIO.GGIO1.MX.AnIn2.mag.f",
+  "mms.simpleIOGenericIO.GGIO1.MX.AnIn3.mag.f",
+  "mms.simpleIOGenericIO.GGIO1.MX.AnIn4.mag.f"
+ ],
+ "iec104": {
+  "1": {
+   "11": {
+    "quality": "good",
+    "type": "M_ME_NC_1",
+    "value": 0.0
+   },
+   "12": {
+    "quality": "good",
+    "type": "M_ME_NC_1",
+    "value": 0.0
+   },
+   "21": {
+    "quality": "good",
+    "type": "M_SP_NA_1",
+    "value": false
+   },
+   "22": {
+    "quality": "good",
+    "type": "M_SP_NA_1",
+    "value": false
+   },
+   "51": {
+    "quality": "good",
+    "type": "C_SC_NA_1",
+    "value": false
+   },
+   "52": {
+    "quality": "good",
+    "type": "C_SE_NC_1",
+    "value": 0.0
+   }
+  }
+ },
+ "model": [
+  {
+   "data_objects": [
+    "AnIn1",
+    "AnIn2",
+    "AnIn3",
+    "AnIn4",
+    "Ind1",
+    "Ind2",
+    "Ind3",
+    "Ind4",
+    "SPCSO1",
+    "SPCSO2",
+    "SPCSO3",
+    "SPCSO4"
+   ],
+   "logical_device": "simpleIOGenericIO",
+   "logical_node": "GGIO1"
+  },
+  {
+   "data_objects": [
+    "Beh",
+    "Health",
+    "Mod"
+   ],
+   "logical_device": "simpleIOGenericIO",
+   "logical_node": "LLN0"
+  },
+  {
+   "data_objects": [
+    "PhyHealth"
+   ],
+   "logical_device": "simpleIOGenericIO",
+   "logical_node": "LPHD1"
+  },
+  {
+   "data_objects": [
+    "Health",
+    "Mod"
+   ],
+   "logical_device": "simpleIOprotection",
+   "logical_node": "LLN0"
+  },
+  {
+   "data_objects": [
+    "StrVal"
+   ],
+   "logical_device": "simpleIOprotection",
+   "logical_node": "PTOC1"
+  }
+ ],
+ "provenance": {
+  "image_id": "sha256:98379afa9ce1ecb8f2e44c876fb1616992879911bfb49a842702e84e52c1a900",
+  "model_source": "native MMS mms_client discover"
+ },
+ "stable": {
+  "iec104.1.11.quality": "good",
+  "iec104.1.11.type": "M_ME_NC_1",
+  "iec104.1.11.value": 0.0,
+  "iec104.1.12.quality": "good",
+  "iec104.1.12.type": "M_ME_NC_1",
+  "iec104.1.12.value": 0.0,
+  "iec104.1.21.quality": "good",
+  "iec104.1.21.type": "M_SP_NA_1",
+  "iec104.1.21.value": false,
+  "iec104.1.22.quality": "good",
+  "iec104.1.22.type": "M_SP_NA_1",
+  "iec104.1.22.value": false,
+  "iec104.1.51.quality": "good",
+  "iec104.1.51.type": "C_SC_NA_1",
+  "iec104.1.51.value": false,
+  "iec104.1.52.quality": "good",
+  "iec104.1.52.type": "C_SE_NC_1",
+  "iec104.1.52.value": 0.0,
+  "mms.simpleIOGenericIO.GGIO1.ST.Ind1.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.Ind2.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.Ind3.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.Ind4.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.SPCSO1.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.SPCSO2.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.SPCSO3.stVal": false,
+  "mms.simpleIOGenericIO.GGIO1.ST.SPCSO4.stVal": false,
+  "mms.simpleIOprotection.PTOC1.SP.StrVal.setMag.f": 500.0
+ }
+}

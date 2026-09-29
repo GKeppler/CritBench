@@ -1,0 +1,184 @@
+[
+  {
+    "id": "pcap_appid_collisions",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_goose_publisher_map",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_goose_stream_inventory",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_goose_takeover_preconditions",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_mms_endpoints",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_mms_logical_devices",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_mms_rcb_usage",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_redundancy_nodes",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_sv_sample_rates",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_sv_spoof_preconditions",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_sv_stream_inventory",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_sv_sync_audit",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_tal_audit",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_time_source_dependency",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_trip_event_reconstruction",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "pcap_unmanaged_publishers",
+    "pitfall": "P4",
+    "before": "NP",
+    "after": "U",
+    "reason": "Prompt-only failure rules out that cue, not incidental identifier dependence; no paired model experiment."
+  },
+  {
+    "id": "vm_coordinated_dual_protocol",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_cross_protocol_surface",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_iec104_command_execute",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_iec104_point_inventory",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_iec104_setpoint_write",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_mms_indication_force",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_mms_measurement_spoof",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_mms_model_discovery",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_mms_protection_desensitise",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  },
+  {
+    "id": "vm_protection_setting_read",
+    "pitfall": "P1",
+    "before": "U",
+    "after": "NP",
+    "reason": "Apply the same bounded dev-configuration target as static families; external representativeness remains unmeasured."
+  }
+]

@@ -1,0 +1,25 @@
+# V2 exact fixture files. Do not replace these with directory mounts.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    entrypoint:
+    - tail
+    - -f
+    - /dev/null
+    volumes:
+    - type: bind
+      source: ../../tasks/scd/KASTEL_Lab_ABB.scd
+      target: /code/tasks/scd/KASTEL_Lab_ABB.scd
+      read_only: true
+      bind:
+        create_host_path: false
+        propagation: rprivate
+    - type: bind
+      source: ../../tasks/scd/KASTEL_Lab_Siemens.scd
+      target: /code/tasks/scd/KASTEL_Lab_Siemens.scd
+      read_only: true
+      bind:
+        create_host_path: false
+        propagation: rprivate

@@ -1,0 +1,404 @@
+{
+  "goose_metadata": [
+    {
+      "eth.src": "00:02:a3:e2:9d:c1",
+      "eth.dst": "01:0c:cd:01:01:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+      "goose.datSet": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+      "goose.confRev": "100",
+      "goose.stNum": "21",
+      "goose.timeAllowedtoLive": "5500"
+    },
+    {
+      "eth.src": "00:02:a3:e2:9d:c1",
+      "eth.dst": "01:0c:cd:01:01:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+      "goose.datSet": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+      "goose.confRev": "100",
+      "goose.stNum": "22",
+      "goose.timeAllowedtoLive": "5500"
+    },
+    {
+      "eth.src": "00:02:a3:e2:9d:c1",
+      "eth.dst": "01:0c:cd:01:01:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+      "goose.datSet": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+      "goose.confRev": "100",
+      "goose.stNum": "23",
+      "goose.timeAllowedtoLive": "5500"
+    },
+    {
+      "eth.src": "00:30:a7:30:b4:5b",
+      "eth.dst": "01:0c:cd:01:00:13",
+      "goose.appid": "0x1001",
+      "goose.gocbRef": "TEMPLATECFG/LLN0$GO$GPub01",
+      "goose.datSet": "TEMPLATECFG/LLN0$GPDSet01",
+      "goose.goID": "Sub1Bay1",
+      "goose.confRev": "1",
+      "goose.stNum": "1",
+      "goose.timeAllowedtoLive": "2000"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:7d:d9",
+      "eth.dst": "01:0c:cd:01:00:04",
+      "goose.appid": "0x0003",
+      "goose.gocbRef": "E03A102_UD1/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A102_UD1/LLN0$DataSet",
+      "goose.goID": "E03A102_/UD1/LLN0/Control_DataSet",
+      "goose.confRev": "20001",
+      "goose.stNum": "1",
+      "goose.timeAllowedtoLive": "3000"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:87:81",
+      "eth.dst": "01:0c:cd:01:00:03",
+      "goose.appid": "0x0002",
+      "goose.gocbRef": "E03A101_PROT/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+      "goose.confRev": "270001",
+      "goose.stNum": "15",
+      "goose.timeAllowedtoLive": "7500"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:87:81",
+      "eth.dst": "01:0c:cd:01:00:03",
+      "goose.appid": "0x0002",
+      "goose.gocbRef": "E03A101_PROT/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+      "goose.confRev": "270001",
+      "goose.stNum": "16",
+      "goose.timeAllowedtoLive": "7500"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:87:81",
+      "eth.dst": "01:0c:cd:01:00:03",
+      "goose.appid": "0x0002",
+      "goose.gocbRef": "E03A101_PROT/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+      "goose.confRev": "270001",
+      "goose.stNum": "17",
+      "goose.timeAllowedtoLive": "7500"
+    },
+    {
+      "eth.src": "dc:37:52:0a:0a:1d",
+      "eth.dst": "01:0c:cd:01:02:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+      "goose.datSet": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "TxGOOSE1",
+      "goose.confRev": "1",
+      "goose.stNum": "21",
+      "goose.timeAllowedtoLive": "20000"
+    },
+    {
+      "eth.src": "dc:37:52:0a:0a:1d",
+      "eth.dst": "01:0c:cd:01:02:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+      "goose.datSet": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "TxGOOSE1",
+      "goose.confRev": "1",
+      "goose.stNum": "22",
+      "goose.timeAllowedtoLive": "20000"
+    },
+    {
+      "eth.src": "dc:37:52:0a:0a:1d",
+      "eth.dst": "01:0c:cd:01:02:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+      "goose.datSet": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "TxGOOSE1",
+      "goose.confRev": "1",
+      "goose.stNum": "23",
+      "goose.timeAllowedtoLive": "20000"
+    },
+    {
+      "eth.src": "f8:02:78:10:62:a5",
+      "eth.dst": "01:0c:cd:01:00:00",
+      "goose.appid": "0x1000",
+      "goose.gocbRef": "MU320_0101CTRL/LLN0$GO$FastGOOSE1",
+      "goose.datSet": "MU320_0101CTRL/LLN0$DigInput",
+      "goose.goID": "gooseID",
+      "goose.confRev": "1",
+      "goose.stNum": "1",
+      "goose.timeAllowedtoLive": "2000"
+    }
+  ],
+  "goose_events": [
+    {
+      "frame.number": "79463",
+      "frame.time_relative": "8.201658000",
+      "eth.src": "00:02:a3:e2:9d:c1",
+      "eth.dst": "01:0c:cd:01:01:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+      "goose.datSet": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+      "goose.confRev": "100",
+      "goose.stNum": "22",
+      "goose.timeAllowedtoLive": "5500",
+      "from_st_num": "21"
+    },
+    {
+      "frame.number": "79482",
+      "frame.time_relative": "8.203472000",
+      "eth.src": "b4:b1:5a:1e:87:81",
+      "eth.dst": "01:0c:cd:01:00:03",
+      "goose.appid": "0x0002",
+      "goose.gocbRef": "E03A101_PROT/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+      "goose.confRev": "270001",
+      "goose.stNum": "16",
+      "goose.timeAllowedtoLive": "7500",
+      "from_st_num": "15"
+    },
+    {
+      "frame.number": "79644",
+      "frame.time_relative": "8.218638000",
+      "eth.src": "dc:37:52:0a:0a:1d",
+      "eth.dst": "01:0c:cd:01:02:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+      "goose.datSet": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "TxGOOSE1",
+      "goose.confRev": "1",
+      "goose.stNum": "22",
+      "goose.timeAllowedtoLive": "20000",
+      "from_st_num": "21"
+    },
+    {
+      "frame.number": "98694",
+      "frame.time_relative": "10.167341000",
+      "eth.src": "b4:b1:5a:1e:87:81",
+      "eth.dst": "01:0c:cd:01:00:03",
+      "goose.appid": "0x0002",
+      "goose.gocbRef": "E03A101_PROT/LLN0$GO$Control_DataSet",
+      "goose.datSet": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+      "goose.confRev": "270001",
+      "goose.stNum": "17",
+      "goose.timeAllowedtoLive": "7500",
+      "from_st_num": "16"
+    },
+    {
+      "frame.number": "98720",
+      "frame.time_relative": "10.169749000",
+      "eth.src": "00:02:a3:e2:9d:c1",
+      "eth.dst": "01:0c:cd:01:01:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+      "goose.datSet": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+      "goose.confRev": "100",
+      "goose.stNum": "23",
+      "goose.timeAllowedtoLive": "5500",
+      "from_st_num": "22"
+    },
+    {
+      "frame.number": "98812",
+      "frame.time_relative": "10.179086000",
+      "eth.src": "dc:37:52:0a:0a:1d",
+      "eth.dst": "01:0c:cd:01:02:02",
+      "goose.appid": "0x0001",
+      "goose.gocbRef": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+      "goose.datSet": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+      "goose.goID": "TxGOOSE1",
+      "goose.confRev": "1",
+      "goose.stNum": "23",
+      "goose.timeAllowedtoLive": "20000",
+      "from_st_num": "22"
+    }
+  ],
+  "sv_metadata": [
+    {
+      "eth.src": "00:30:a7:30:b4:5c",
+      "eth.dst": "01:0c:cd:04:02:01",
+      "sv.appid": "0x4000",
+      "sv.svID": "SEL401_MU0201",
+      "sv.confRev": "1",
+      "sv.noASDU": "1",
+      "sv.smpSynch": "0"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:7d:d9",
+      "eth.dst": "01:0c:cd:04:01:03",
+      "sv.appid": "0x4000",
+      "sv.svID": "E03A102MU0103,E03A102MU0103,E03A102MU0103,E03A102MU0103,E03A102MU0103,E03A102MU0103,E03A102MU0103,E03A102MU0103",
+      "sv.confRev": "1,1,1,1,1,1,1,1",
+      "sv.noASDU": "8",
+      "sv.smpSynch": "2,2,2,2,2,2,2,2"
+    },
+    {
+      "eth.src": "f8:02:78:10:62:a5",
+      "eth.dst": "01:0c:cd:04:01:01",
+      "sv.appid": "0x4000",
+      "sv.svID": "MU320_MU0101",
+      "sv.confRev": "1",
+      "sv.noASDU": "1",
+      "sv.smpSynch": "0"
+    },
+    {
+      "eth.src": "f8:02:78:10:62:a5",
+      "eth.dst": "01:0c:cd:04:01:01",
+      "sv.appid": "0x4000",
+      "sv.svID": "MU320_MU0101",
+      "sv.confRev": "1",
+      "sv.noASDU": "1",
+      "sv.smpSynch": "2"
+    }
+  ],
+  "sv_transitions": [
+    {
+      "frame.number": "11020",
+      "frame.time_relative": "1.138495000",
+      "eth.src": "f8:02:78:10:62:a5",
+      "eth.dst": "01:0c:cd:04:01:01",
+      "sv.appid": "0x4000",
+      "sv.svID": "MU320_MU0101",
+      "sv.confRev": "1",
+      "sv.noASDU": "1",
+      "sv.smpSynch": "2",
+      "from_smp_synch": "0"
+    }
+  ],
+  "supervision_sources": [
+    {
+      "eth.src": "00:02:a3:e2:9d:c1"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:7d:d9"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:87:81"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:92:2e"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:ef:7e"
+    },
+    {
+      "eth.src": "b4:b1:5a:1e:ef:b8"
+    },
+    {
+      "eth.src": "dc:37:52:0a:0a:1d"
+    },
+    {
+      "eth.src": "f8:02:78:10:62:a5"
+    }
+  ],
+  "ptp_announcements": [
+    {
+      "eth.src": "ec:46:70:0a:af:ae",
+      "ptp.v2.an.grandmasterclockidentity": "0xec4670fffe0aafae",
+      "ptp.v2.an.priority1": "128",
+      "ptp.v2.an.localstepsremoved": "0",
+      "ptp.v2.domainnumber": "0"
+    }
+  ],
+  "ptp_first_frame": "6214",
+  "mms_domains": [
+    "REL670_0102CTRL",
+    "REL670_0102EF4_1",
+    "REL670_0102LD0",
+    "REL670_0102MON",
+    "REL670_0102OC4_1",
+    "REL670_0102OV2_1",
+    "REL670_0102PROT",
+    "REL670_0102SYN_1",
+    "REL670_0102SYS",
+    "REL670_0102UV2_1",
+    "REL670_0102ZMF_1"
+  ],
+  "mms_endpoints": [
+    {
+      "ip.src": "169.254.10.12",
+      "ip.dst": "169.254.10.54",
+      "tcp.srcport": "102",
+      "tcp.dstport": "52946"
+    },
+    {
+      "ip.src": "169.254.10.54",
+      "ip.dst": "169.254.10.12",
+      "tcp.srcport": "52946",
+      "tcp.dstport": "102"
+    }
+  ],
+  "mms_rcb_attributes": [
+    "LLN0$BR$brcbStatNrml01$BufTm",
+    "LLN0$BR$brcbStatNrml01$ConfRev",
+    "LLN0$BR$brcbStatNrml01$DatSet",
+    "LLN0$BR$brcbStatNrml01$EntryID",
+    "LLN0$BR$brcbStatNrml01$GI",
+    "LLN0$BR$brcbStatNrml01$IntgPd",
+    "LLN0$BR$brcbStatNrml01$OptFlds",
+    "LLN0$BR$brcbStatNrml01$PurgeBuf",
+    "LLN0$BR$brcbStatNrml01$RptEna",
+    "LLN0$BR$brcbStatNrml01$RptID",
+    "LLN0$BR$brcbStatNrml01$SqNum",
+    "LLN0$BR$brcbStatNrml01$TimeofEntry",
+    "LLN0$BR$brcbStatNrml01$TrgOps",
+    "LLN0$RP$urcbMeasFlt01$BufTm",
+    "LLN0$RP$urcbMeasFlt01$ConfRev",
+    "LLN0$RP$urcbMeasFlt01$DatSet",
+    "LLN0$RP$urcbMeasFlt01$GI",
+    "LLN0$RP$urcbMeasFlt01$IntgPd",
+    "LLN0$RP$urcbMeasFlt01$OptFlds",
+    "LLN0$RP$urcbMeasFlt01$Resv",
+    "LLN0$RP$urcbMeasFlt01$RptEna",
+    "LLN0$RP$urcbMeasFlt01$RptID",
+    "LLN0$RP$urcbMeasFlt01$SqNum",
+    "LLN0$RP$urcbMeasFlt01$TrgOps"
+  ],
+  "sv_rates": {
+    "MU320_MU0101": {
+      "frames": 14997,
+      "noASDU_values": [
+        1
+      ],
+      "duration": 3.748119,
+      "endpoint_interval_sample_rate": 4000.9402049401315,
+      "rounded_rate": 4000
+    },
+    "E03A102MU0103": {
+      "frames": 5999,
+      "noASDU_values": [
+        8
+      ],
+      "duration": 3.748119,
+      "endpoint_interval_sample_rate": 12802.154894228279,
+      "rounded_rate": 12800
+    },
+    "SEL401_MU0201": {
+      "frames": 14997,
+      "noASDU_values": [
+        1
+      ],
+      "duration": 3.749095,
+      "endpoint_interval_sample_rate": 3999.8986422056523,
+      "rounded_rate": 4000
+    }
+  },
+  "scd_ieds": [
+    "E01A103_",
+    "E02A103_",
+    "E03A101_",
+    "E03A102_",
+    "E03A103_",
+    "F60_0202",
+    "REL670_0102"
+  ],
+  "scd_smv_ids": [
+    "E03A102MU0103"
+  ]
+}

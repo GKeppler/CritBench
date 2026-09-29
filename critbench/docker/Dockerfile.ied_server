@@ -14,13 +14,21 @@
 # ==========================================================================
 FROM debian:bookworm-slim AS builder
 
-# Build dependencies
+# Build dependencies (wget/bzip2 for the mbedTLS source tarball)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential cmake git ca-certificates \
+        build-essential cmake git ca-certificates wget bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- Clone and build libiec61850 ----------------------------------------
+# ---- Clone and build libiec61850 (WITH mbedTLS for 62351-3 TLS) ---------
+# libiec61850 compiles TLS support when third_party/mbedtls/mbedtls-3.6.0 exists
+# (it version-checks for "Mbed TLS 3.6."). The 3.6.0 release asset is gone, so we
+# fetch 3.6.2 (LTS) and rename the folder. This is what makes MMS-over-TLS
+# (IED_MMS_TLS / MMS_CLIENT_TLS) possible; without it the lib builds plaintext-only.
 RUN git clone --depth 1 https://github.com/mz-automation/libiec61850.git /src/libiec61850 \
+    && cd /src/libiec61850/third_party/mbedtls \
+    && wget -q https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.2/mbedtls-3.6.2.tar.bz2 \
+    && tar xjf mbedtls-3.6.2.tar.bz2 && rm -f mbedtls-3.6.2.tar.bz2 \
+    && mv mbedtls-3.6.2 mbedtls-3.6.0 \
     && cd /src/libiec61850 \
     # ------------------------------------------------------------------
     # Benchmark patch: allow MMS client writes to ST (status) and MX
@@ -49,6 +57,16 @@ RUN gcc -O2 -o /usr/local/bin/critbench_ied_server /src/critbench_ied_server.c \
         -liec61850 -lpthread -lm \
     && strip /usr/local/bin/critbench_ied_server
 
+# ---- Build ds1cb1_server (DS1CB1 impersonation, no pandapower) -----------
+# Runs instead of critbench_ied_server when IED_PROFILE=ds1cb1, so one
+# container can stand in for the gridnet DS1 breaker (ADR-0004, ss1 mode).
+COPY docker/ds1cb1_server.c /src/ds1cb1_server.c
+RUN gcc -O2 -o /usr/local/bin/ds1cb1_server /src/ds1cb1_server.c \
+        -I/usr/local/include/libiec61850 \
+        -L/usr/local/lib \
+        -liec61850 -lpthread -lm \
+    && strip /usr/local/bin/ds1cb1_server
+
 # ---- Build mms_client (used by state API relay) -------------------------
 COPY docker/mms_client.c /src/mms_client.c
 RUN gcc -O2 -o /usr/local/bin/mms_client /src/mms_client.c \
@@ -60,9 +78,12 @@ RUN gcc -O2 -o /usr/local/bin/mms_client /src/mms_client.c \
 # ==========================================================================
 FROM python:3.11-slim-bookworm
 
-# Runtime libs needed by the C binaries
+# Runtime libs needed by the C binaries. iproute2 gives the container `ip`, which
+# the gridnet bring-up's "OT return routes" loop needs (docker exec ip route add)
+# so a DS1CB1-mode container can reply to the OT backbone (jump-host-2) — without
+# it the return route silently fails and the breaker is unreachable from the agent.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libstdc++6 tshark \
+        libstdc++6 tshark iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Python deps for state API + IEC 104 server
@@ -74,8 +95,10 @@ RUN ldconfig
 
 # --- Copy compiled binaries ----------------------------------------------
 COPY --from=builder /usr/local/bin/critbench_ied_server /opt/iec61850/critbench_ied_server
+COPY --from=builder /usr/local/bin/ds1cb1_server        /opt/iec61850/ds1cb1_server
 COPY --from=builder /usr/local/bin/mms_client           /opt/libiec61850/bin/mms_client
 RUN chmod +x /opt/iec61850/critbench_ied_server \
+             /opt/iec61850/ds1cb1_server \
              /opt/libiec61850/bin/mms_client
 
 # --- Copy IEC 104 server --------------------------------------------------

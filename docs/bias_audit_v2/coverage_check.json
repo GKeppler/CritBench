@@ -1,0 +1,15 @@
+{
+  "task_definitions": 53,
+  "review_records": 53,
+  "families": {
+    "scl": 19,
+    "pcap": 16,
+    "vm": 10,
+    "hardware": 8
+  },
+  "label_backed": 45,
+  "awaiting_baseline": 8,
+  "manifest_inputs_checked": 112,
+  "changed_inputs": [],
+  "secondary_adjudications": 26
+}

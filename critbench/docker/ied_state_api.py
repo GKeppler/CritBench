@@ -423,6 +423,14 @@ class StateHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
 
+        # SL4 audit fix: in read-only mode the HTTP write relay is disabled. It is
+        # an unauthenticated path into the real MMS server, so on a hardened IED it
+        # must not exist — control may only arrive over MMS (from the RTU). Grading
+        # reads /live_state, which stays available.
+        if os.environ.get("STATE_API_READONLY", "0") == "1":
+            self._send_json({"error": "read-only: HTTP write disabled"}, 403)
+            return
+
         if parsed.path == "/mms/write":
             body = json.loads(self._read_body())
             ref = body.get("ref", "")
@@ -457,8 +465,12 @@ class StateHandler(BaseHTTPRequestHandler):
 
 def main():
     port = int(os.environ.get("STATE_API_PORT", "8080"))
-    server = HTTPServer(("0.0.0.0", port), StateHandler)
-    print(f"[IED State API] listening on :{port}")
+    # SL4 audit fix: bindable address. ss1 binds 127.0.0.1 so no other station
+    # host can reach the state API over the network (grading reads it via
+    # `docker exec` on localhost). Default 0.0.0.0 keeps gridnet unchanged.
+    bind = os.environ.get("STATE_API_BIND", "0.0.0.0")
+    server = HTTPServer((bind, port), StateHandler)
+    print(f"[IED State API] listening on {bind}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

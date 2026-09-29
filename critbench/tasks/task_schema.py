@@ -9,6 +9,7 @@ and how to evaluate success.
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -40,6 +41,7 @@ class EvalMethod(Enum):
     REGEX = "regex"
     STATE_CHECK = "state_check"
     MULTI = "multi"
+    STRUCTURED = "structured"   # v2: typed checks on a JSON answer (ADR-0003 §5)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +68,8 @@ class TaskEvaluation:
     expected_list: List[str] = field(default_factory=list)  # for contains_any
     checks: List[EvalCheck] = field(default_factory=list)  # for multi / state_check
     case_sensitive: bool = True      # for contains / exact_match
+    fields: List[Dict[str, Any]] = field(default_factory=list)  # for structured
+    labels: Dict[str, Any] = field(default_factory=dict)        # frozen ground truth
 
 
 @dataclass
@@ -154,6 +158,7 @@ def _parse_evaluation(raw: dict) -> TaskEvaluation:
     return TaskEvaluation(
         method=method, expected=expected_str, expected_list=expected_list,
         checks=checks, case_sensitive=case_sensitive,
+        fields=raw.get("fields", []),
     )
 
 
@@ -224,6 +229,21 @@ def load_task(yaml_path: str | Path) -> Task:
         timeout=int(raw.get("timeout", 3600)),
     )
 
+    # v2 tasks carry no expected values: the ground truth lives in the family's
+    # generated labels.json, derived from the fixture by truth.py (ADR-0003 §6).
+    # A task YAML that cannot be answered from its own text is also a task YAML
+    # that cannot leak its answer.
+    if task.evaluation.method is EvalMethod.STRUCTURED:
+        labels_file = path.parent / "labels.json"
+        if not labels_file.exists():
+            raise FileNotFoundError(
+                f"{path.name} is a structured task but {labels_file} is missing "
+                f"-- run `python3 critbench/tasksv2/validate.py --freeze`")
+        all_labels = json.loads(labels_file.read_text())
+        if task.id not in all_labels:
+            raise KeyError(f"{labels_file} has no frozen labels for task '{task.id}'")
+        task.evaluation.labels = all_labels[task.id]
+
     logger.info("Loaded task %s (%s) — type=%s, tools=%s",
                 task.id, task.name, task.type.value, task.allowed_tools)
     return task
@@ -243,6 +263,29 @@ def load_all_tasks(directory: str | Path) -> List[Task]:
 
 CRITBENCH_ROOT = Path(__file__).resolve().parent.parent
 """The ``critbench/`` directory — the package root, not the git root."""
+
+
+def render_objective(raw: Dict[str, Any], objective: str, hint_level: str = "") -> str:
+    """The user-turn text exactly as the model receives it.
+
+    Lives here, beside ``template_vars``, for the same reason: both front-ends
+    must build the prompt identically, and so must the v2 validator -- a leak
+    gate that inspects a different string from the one the model reads is not a
+    gate. v2 answers are JSON, so the schema is part of the assignment, not
+    decoration; ``hint_level`` selects an explicitly reported treatment (H1
+    conceptual, H2 locator) and defaults to none.
+    """
+    parts = [objective.rstrip()]
+    schema = (raw.get("answer_schema") or "").strip()
+    if schema:
+        parts.append("Answer with a single JSON object of exactly this shape:\n" + schema)
+    hints = raw.get("hints") or {}
+    hint = hints.get(hint_level, "") if hint_level else ""
+    if not hint and hint_level and raw.get("hint"):
+        hint = raw["hint"]          # v1 tasks carry one unlevelled hint
+    if hint:
+        parts.append("Hint: " + hint.strip())
+    return "\n\n".join(parts)
 
 
 def ssh_key_paths(task: Task) -> tuple[Optional[str], Optional[str]]:

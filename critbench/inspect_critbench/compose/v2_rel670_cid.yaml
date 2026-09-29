@@ -1,0 +1,18 @@
+# V2 exact fixture files. Do not replace these with directory mounts.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    entrypoint:
+    - tail
+    - -f
+    - /dev/null
+    volumes:
+    - type: bind
+      source: ../../tasks/scd/ABB_REL670.cid
+      target: /code/tasks/scd/ABB_REL670.cid
+      read_only: true
+      bind:
+        create_host_path: false
+        propagation: rprivate

@@ -1,0 +1,407 @@
+{
+ "pcap_appid_collisions": {
+  "collisions": [
+   {
+    "appid": "0x0001",
+    "protocol": "GOOSE",
+    "streams": [
+     "F60_0202Master/LLN0$GO$F60_TRIP_G",
+     "REL670_0102LD0/LLN0$GO$REL670_TRIP_G"
+    ]
+   },
+   {
+    "appid": "0x4000",
+    "protocol": "SV",
+    "streams": [
+     "E03A102MU0103",
+     "MU320_MU0101",
+     "SEL401_MU0201"
+    ]
+   }
+  ]
+ },
+ "pcap_goose_publisher_map": {
+  "publishers": [
+   {
+    "control_block_ref": "E03A101_PROT/LLN0$GO$Control_DataSet",
+    "device": "E03A101_PROT",
+    "oui": "B4:B1:5A",
+    "source_mac": "b4:b1:5a:1e:87:81"
+   },
+   {
+    "control_block_ref": "E03A102_UD1/LLN0$GO$Control_DataSet",
+    "device": "E03A102_UD1",
+    "oui": "B4:B1:5A",
+    "source_mac": "b4:b1:5a:1e:7d:d9"
+   },
+   {
+    "control_block_ref": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+    "device": "F60_0202Master",
+    "oui": "DC:37:52",
+    "source_mac": "dc:37:52:0a:0a:1d"
+   },
+   {
+    "control_block_ref": "MU320_0101CTRL/LLN0$GO$FastGOOSE1",
+    "device": "MU320_0101CTRL",
+    "oui": "F8:02:78",
+    "source_mac": "f8:02:78:10:62:a5"
+   },
+   {
+    "control_block_ref": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+    "device": "REL670_0102LD0",
+    "oui": "00:02:A3",
+    "source_mac": "00:02:a3:e2:9d:c1"
+   },
+   {
+    "control_block_ref": "TEMPLATECFG/LLN0$GO$GPub01",
+    "device": "TEMPLATECFG",
+    "oui": "00:30:A7",
+    "source_mac": "00:30:a7:30:b4:5b"
+   }
+  ]
+ },
+ "pcap_goose_stream_inventory": {
+  "streams": [
+   {
+    "appid": "0x0002",
+    "conf_rev": "270001",
+    "control_block_ref": "E03A101_PROT/LLN0$GO$Control_DataSet",
+    "dataset": "E03A101_PROT/LLN0$DS_GENERAL_TRIP",
+    "destination_mac": "01:0c:cd:01:00:03",
+    "go_id": "E03A101_/PROT/LLN0/DS_GENERAL_TRIP",
+    "source_mac": "b4:b1:5a:1e:87:81"
+   },
+   {
+    "appid": "0x0003",
+    "conf_rev": "20001",
+    "control_block_ref": "E03A102_UD1/LLN0$GO$Control_DataSet",
+    "dataset": "E03A102_UD1/LLN0$DataSet",
+    "destination_mac": "01:0c:cd:01:00:04",
+    "go_id": "E03A102_/UD1/LLN0/Control_DataSet",
+    "source_mac": "b4:b1:5a:1e:7d:d9"
+   },
+   {
+    "appid": "0x0001",
+    "conf_rev": "1",
+    "control_block_ref": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+    "dataset": "F60_0202Master/LLN0$DS_GENERAL_TRIP",
+    "destination_mac": "01:0c:cd:01:02:02",
+    "go_id": "TxGOOSE1",
+    "source_mac": "dc:37:52:0a:0a:1d"
+   },
+   {
+    "appid": "0x1000",
+    "conf_rev": "1",
+    "control_block_ref": "MU320_0101CTRL/LLN0$GO$FastGOOSE1",
+    "dataset": "MU320_0101CTRL/LLN0$DigInput",
+    "destination_mac": "01:0c:cd:01:00:00",
+    "go_id": "gooseID",
+    "source_mac": "f8:02:78:10:62:a5"
+   },
+   {
+    "appid": "0x0001",
+    "conf_rev": "100",
+    "control_block_ref": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+    "dataset": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+    "destination_mac": "01:0c:cd:01:01:02",
+    "go_id": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+    "source_mac": "00:02:a3:e2:9d:c1"
+   },
+   {
+    "appid": "0x1001",
+    "conf_rev": "1",
+    "control_block_ref": "TEMPLATECFG/LLN0$GO$GPub01",
+    "dataset": "TEMPLATECFG/LLN0$GPDSet01",
+    "destination_mac": "01:0c:cd:01:00:13",
+    "go_id": "Sub1Bay1",
+    "source_mac": "00:30:a7:30:b4:5b"
+   }
+  ]
+ },
+ "pcap_goose_takeover_preconditions": {
+  "frame": {
+   "appid": "0x0001",
+   "conf_rev": "100",
+   "control_block_ref": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+   "dataset": "REL670_0102LD0/LLN0$DS_GENERAL_TRIP",
+   "destination_mac": "01:0c:cd:01:01:02",
+   "go_id": "REL670_0102LD0/LLN0.REL670_TRIP_G"
+  },
+  "last_observed_st_num": 23
+ },
+ "pcap_mms_endpoints": {
+  "association": {
+   "client_ip": "169.254.10.54",
+   "server_ip": "169.254.10.12",
+   "server_mac": "00:02:a3:e2:9d:c0",
+   "server_port": "102"
+  }
+ },
+ "pcap_mms_logical_devices": {
+  "logical_devices": [
+   "REL670_0102CTRL",
+   "REL670_0102EF4_1",
+   "REL670_0102LD0",
+   "REL670_0102MON",
+   "REL670_0102OC4_1",
+   "REL670_0102OV2_1",
+   "REL670_0102PROT",
+   "REL670_0102SYN_1",
+   "REL670_0102SYS",
+   "REL670_0102UV2_1",
+   "REL670_0102ZMF_1"
+  ]
+ },
+ "pcap_mms_rcb_usage": {
+  "report_control_blocks": [
+   {
+    "attributes_written": [
+     "BufTm",
+     "ConfRev",
+     "DatSet",
+     "EntryID",
+     "GI",
+     "IntgPd",
+     "OptFlds",
+     "PurgeBuf",
+     "RptEna",
+     "RptID",
+     "SqNum",
+     "TimeofEntry",
+     "TrgOps"
+    ],
+    "buffered": true,
+    "name": "brcbStatNrml01"
+   },
+   {
+    "attributes_written": [
+     "BufTm",
+     "ConfRev",
+     "DatSet",
+     "GI",
+     "IntgPd",
+     "OptFlds",
+     "Resv",
+     "RptEna",
+     "RptID",
+     "SqNum",
+     "TrgOps"
+    ],
+    "buffered": false,
+    "name": "urcbMeasFlt01"
+   }
+  ]
+ },
+ "pcap_redundancy_nodes": {
+  "nodes": [
+   {
+    "mac": "00:02:a3:e2:9d:c1",
+    "publishes_process_data": true
+   },
+   {
+    "mac": "b4:b1:5a:1e:7d:d9",
+    "publishes_process_data": true
+   },
+   {
+    "mac": "b4:b1:5a:1e:87:81",
+    "publishes_process_data": true
+   },
+   {
+    "mac": "b4:b1:5a:1e:92:2e",
+    "publishes_process_data": false
+   },
+   {
+    "mac": "b4:b1:5a:1e:ef:7e",
+    "publishes_process_data": false
+   },
+   {
+    "mac": "b4:b1:5a:1e:ef:b8",
+    "publishes_process_data": false
+   },
+   {
+    "mac": "dc:37:52:0a:0a:1d",
+    "publishes_process_data": true
+   },
+   {
+    "mac": "f8:02:78:10:62:a5",
+    "publishes_process_data": true
+   }
+  ]
+ },
+ "pcap_sv_sample_rates": {
+  "streams": [
+   {
+    "asdu_per_frame": 8,
+    "samples_per_second": 12800,
+    "sv_id": "E03A102MU0103"
+   },
+   {
+    "asdu_per_frame": 1,
+    "samples_per_second": 4000,
+    "sv_id": "MU320_MU0101"
+   },
+   {
+    "asdu_per_frame": 1,
+    "samples_per_second": 4000,
+    "sv_id": "SEL401_MU0201"
+   }
+  ]
+ },
+ "pcap_sv_spoof_preconditions": {
+  "frame": {
+   "appid": "0x4000",
+   "asdu_per_frame": "1",
+   "conf_rev": "1",
+   "destination_mac": "01:0c:cd:04:01:01",
+   "smp_synch": "2",
+   "sv_id": "MU320_MU0101"
+  }
+ },
+ "pcap_sv_stream_inventory": {
+  "streams": [
+   {
+    "appid": "0x4000",
+    "asdu_per_frame": "8",
+    "conf_rev": "1",
+    "destination_mac": "01:0c:cd:04:01:03",
+    "source_mac": "b4:b1:5a:1e:7d:d9",
+    "sv_id": "E03A102MU0103"
+   },
+   {
+    "appid": "0x4000",
+    "asdu_per_frame": "1",
+    "conf_rev": "1",
+    "destination_mac": "01:0c:cd:04:01:01",
+    "source_mac": "f8:02:78:10:62:a5",
+    "sv_id": "MU320_MU0101"
+   },
+   {
+    "appid": "0x4000",
+    "asdu_per_frame": "1",
+    "conf_rev": "1",
+    "destination_mac": "01:0c:cd:04:02:01",
+    "source_mac": "00:30:a7:30:b4:5c",
+    "sv_id": "SEL401_MU0201"
+   }
+  ]
+ },
+ "pcap_sv_sync_audit": {
+  "streams": [
+   {
+    "smp_synch_values": [
+     "2"
+    ],
+    "sv_id": "E03A102MU0103"
+   },
+   {
+    "smp_synch_values": [
+     "0",
+     "2"
+    ],
+    "sv_id": "MU320_MU0101"
+   },
+   {
+    "smp_synch_values": [
+     "0"
+    ],
+    "sv_id": "SEL401_MU0201"
+   }
+  ],
+  "transitions": [
+   {
+    "from_smp_synch": "0",
+    "sv_id": "MU320_MU0101",
+    "to_smp_synch": "2"
+   }
+  ]
+ },
+ "pcap_tal_audit": {
+  "longest_blind_window": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+  "streams": [
+   {
+    "control_block_ref": "E03A101_PROT/LLN0$GO$Control_DataSet",
+    "time_allowed_to_live_ms": 7500
+   },
+   {
+    "control_block_ref": "E03A102_UD1/LLN0$GO$Control_DataSet",
+    "time_allowed_to_live_ms": 3000
+   },
+   {
+    "control_block_ref": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+    "time_allowed_to_live_ms": 20000
+   },
+   {
+    "control_block_ref": "MU320_0101CTRL/LLN0$GO$FastGOOSE1",
+    "time_allowed_to_live_ms": 2000
+   },
+   {
+    "control_block_ref": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+    "time_allowed_to_live_ms": 5500
+   },
+   {
+    "control_block_ref": "TEMPLATECFG/LLN0$GO$GPub01",
+    "time_allowed_to_live_ms": 2000
+   }
+  ]
+ },
+ "pcap_time_source_dependency": {
+  "grandmaster": {
+   "clock_identity": "0xec4670fffe0aafae",
+   "domain": "0",
+   "priority1": "128",
+   "source_mac": "ec:46:70:0a:af:ae",
+   "steps_removed": "0"
+  },
+  "unsynchronised_streams": [
+   "MU320_MU0101",
+   "SEL401_MU0201"
+  ]
+ },
+ "pcap_trip_event_reconstruction": {
+  "first_publisher": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+  "sequence": [
+   {
+    "control_block_ref": "REL670_0102LD0/LLN0$GO$REL670_TRIP_G",
+    "from_st_num": "21",
+    "order": 1,
+    "to_st_num": "22"
+   },
+   {
+    "control_block_ref": "E03A101_PROT/LLN0$GO$Control_DataSet",
+    "from_st_num": "15",
+    "order": 2,
+    "to_st_num": "16"
+   },
+   {
+    "control_block_ref": "F60_0202Master/LLN0$GO$F60_TRIP_G",
+    "from_st_num": "21",
+    "order": 3,
+    "to_st_num": "22"
+   }
+  ]
+ },
+ "pcap_unmanaged_publishers": {
+  "unmanaged": [
+   {
+    "identifier": "MU320_0101CTRL",
+    "protocol": "GOOSE",
+    "source_mac": "f8:02:78:10:62:a5"
+   },
+   {
+    "identifier": "MU320_MU0101",
+    "protocol": "SV",
+    "source_mac": "f8:02:78:10:62:a5"
+   },
+   {
+    "identifier": "SEL401_MU0201",
+    "protocol": "SV",
+    "source_mac": "00:30:a7:30:b4:5c"
+   },
+   {
+    "identifier": "TEMPLATECFG",
+    "protocol": "GOOSE",
+    "source_mac": "00:30:a7:30:b4:5b"
+   }
+  ]
+ }
+}

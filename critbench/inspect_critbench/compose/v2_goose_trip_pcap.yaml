@@ -1,0 +1,18 @@
+# V2 exact fixture files. Do not replace these with directory mounts.
+services:
+  default:
+    image: critbench-agent:latest
+    x-local: true
+    init: true
+    entrypoint:
+    - tail
+    - -f
+    - /dev/null
+    volumes:
+    - type: bind
+      source: ../../tasks/pcaps/goose_breaker_trip.pcap
+      target: /code/tasks/pcaps/goose_breaker_trip.pcap
+      read_only: true
+      bind:
+        create_host_path: false
+        propagation: rprivate

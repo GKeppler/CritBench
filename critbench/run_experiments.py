@@ -227,13 +227,13 @@ def _gridnet_is_up() -> bool:
 
 
 def start_gridnet_stack() -> bool:
-    """Bring up the vendored gridnet environment (gridnet_env/).
+    """Bring up the vendored gridnet environment (gridnet_env/) on host Docker.
 
-    Unlike the ied-server and GRFICSv3 stacks this is NOT docker compose: the
-    targets are ~56 containers inside a QEMU/KVM guest, so bring-up means
-    booting a VM and running the guest-side bring_up_*.sh scripts. That is what
-    gridnet_env/setup.sh (first run, builds the disk) and gridnet_env/launch.sh
-    (idempotent thereafter) do.
+    Unlike the ied-server and GRFICSv3 stacks this is not a single docker
+    compose file: gridnet_env/bring_up_host.sh brings up the ~70 containers
+    (shared infra, the 7 substations, the IT/OT bridge) on the host Docker
+    daemon and starts the milestone state API. It tears down first, so each
+    call is a clean bring-up.
 
     Returns True if this call started it (so the caller knows whether to leave
     it running), False if it was already up.
@@ -244,20 +244,16 @@ def start_gridnet_stack() -> bool:
         log.info("gridnet environment already up ✓")
         return False
 
-    launch = GRIDNET_ENV_DIR / "launch.sh"
-    setup = GRIDNET_ENV_DIR / "setup.sh"
-    if not launch.is_file():
+    script = GRIDNET_ENV_DIR / "bring_up_host.sh"
+    if not script.is_file():
         raise RuntimeError(
-            f"gridnet environment not vendored: {launch} is missing. "
+            f"gridnet environment not vendored: {script} is missing. "
             f"See gridnet_env/README.md."
         )
 
-    # setup.sh builds the 150G qcow2 and the cloud-init seed, then execs
-    # launch.sh. Once the disk exists, launch.sh alone is the idempotent path.
-    script = launch if (GRIDNET_ENV_DIR / "vm" / "disk.qcow2").is_file() else setup
-    log.info("Starting gridnet environment via %s (first boot takes several "
-             "minutes: cloud-init installs Docker, then ~2 GB of images load) …",
-             script.name)
+    log.info("Starting gridnet environment via %s (loads the substation images "
+             "and brings up the full topology; the first run also builds a few "
+             "images) …", script.name)
     subprocess.run([str(script)], check=True, cwd=str(GRIDNET_ENV_DIR))
 
     for _ in range(60):
@@ -267,32 +263,31 @@ def start_gridnet_stack() -> bool:
         time.sleep(5)
     raise RuntimeError(
         f"gridnet environment did not become healthy in time (checked "
-        f"{GRIDNET_STATE_API} for 300 s). Check gridnet_env/vm/serial.log."
+        f"{GRIDNET_STATE_API} for 300 s). Check the bring_up_host.sh output."
     )
 
 
 def stop_gridnet_stack() -> None:
-    """Intentionally a no-op — the gridnet guest is left running.
+    """Intentionally a no-op — the gridnet range is left running.
 
-    Two reasons not to tear it down:
+    Two reasons not to tear it down after every batch:
 
-    1. Boot is expensive (cloud-init, Docker bootstrap, ~2 GB of image loads,
-       then 56 containers), so shutting down between batches would dominate
-       runtime.
-    2. State does not reset by restarting. Driving an XCBR breaker re-dispatches
-       the pandapower model, and closing the breaker again does not restore the
-       previous load flow (upstream verified 0.255437 -> 0.000000 -> 0.019981;
-       neither a simulator nor an IED restart brings it back). The only true
-       reset is a QEMU savevm snapshot:
+    1. Bring-up is expensive (image loads/builds, then ~70 containers), so
+       tearing down between batches would dominate runtime.
+    2. State does not reset by restarting a container. Driving an XCBR breaker
+       re-dispatches the pandapower model, and closing the breaker again does
+       not restore the previous load flow (upstream verified
+       0.255437 -> 0.000000 -> 0.019981; neither a simulator nor an IED restart
+       brings it back). The real reset is a full teardown + bring-up, which
+       recreates the pandapower container from its image:
 
-           gridnet_env/launch.sh --snapshot clean     # once, after bring-up
-           gridnet_env/launch.sh --revert  clean      # before each graded run
+           gridnet_env/bring_up_host.sh --down && gridnet_env/bring_up_host.sh
 
-       So for comparable runs, revert to a snapshot rather than expecting this
-       function to clean up.
+       So for comparable graded runs, re-bring-up between runs rather than
+       expecting this function to clean up.
     """
-    log.info("Leaving gridnet environment running (revert a snapshot for a "
-             "clean state — see stop_gridnet_stack docstring)")
+    log.info("Leaving gridnet environment running (--down && bring_up_host.sh "
+             "for a clean state — see stop_gridnet_stack docstring)")
 
 
 def stop_grfics_stack(compose_file: str) -> None:

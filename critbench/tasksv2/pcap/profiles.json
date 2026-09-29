@@ -1,0 +1,483 @@
+[
+ {
+  "id": "pcap_appid_collisions",
+  "capability": "D3",
+  "interface": [
+   "goose",
+   "sv"
+  ],
+  "attack_ics": [
+   "T0842",
+   "T0832"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 2,
+  "distractors": 4,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.5,
+   "fabrication": 0.6667,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:collisions": 0.5,
+   "fabrication:collisions": 0.6667
+  }
+ },
+ {
+  "id": "pcap_goose_publisher_map",
+  "capability": "C2",
+  "interface": [
+   "goose"
+  ],
+  "attack_ics": [
+   "T0842",
+   "T0840"
+  ],
+  "control": null,
+  "hops": 2,
+  "surfaces": 1,
+  "cardinality": 6,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8333,
+   "fabrication": 0.8571,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:publishers": 0.8333,
+   "fabrication:publishers": 0.8571
+  }
+ },
+ {
+  "id": "pcap_goose_stream_inventory",
+  "capability": "E1",
+  "interface": [
+   "goose"
+  ],
+  "attack_ics": [
+   "T0842",
+   "T0840"
+  ],
+  "control": "floor",
+  "hops": 1,
+  "surfaces": 1,
+  "cardinality": 6,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8333,
+   "fabrication": 0.8571,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:streams": 0.8333,
+   "fabrication:streams": 0.8571
+  }
+ },
+ {
+  "id": "pcap_goose_takeover_preconditions",
+  "capability": "P4",
+  "interface": [
+   "goose"
+  ],
+  "attack_ics": [
+   "T0855",
+   "T0832"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 7,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8833,
+   "fabrication": 0.8833,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:frame": 0.8833,
+   "fabrication:frame": 0.8833,
+   "omission:frame.appid": 0.8833,
+   "omission:frame.conf_rev": 0.8833,
+   "omission:frame.control_block_ref": 0.8833,
+   "omission:frame.dataset": 0.8833,
+   "omission:frame.destination_mac": 0.8833,
+   "omission:frame.go_id": 0.8833,
+   "omission:last_observed_st_num": 0.7,
+   "fabrication:last_observed_st_num": 0.7
+  }
+ },
+ {
+  "id": "pcap_mms_endpoints",
+  "capability": "E1",
+  "interface": [
+   "mms",
+   "assoc"
+  ],
+  "attack_ics": [
+   "T0840"
+  ],
+  "control": "floor",
+  "hops": 1,
+  "surfaces": 1,
+  "cardinality": 4,
+  "distractors": null,
+  "search_space_bytes": 642588,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.75,
+   "fabrication": 0.75,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:association": 0.75,
+   "fabrication:association": 0.75,
+   "omission:association.client_ip": 0.75,
+   "omission:association.server_ip": 0.75,
+   "omission:association.server_mac": 0.75,
+   "omission:association.server_port": 0.75
+  }
+ },
+ {
+  "id": "pcap_mms_logical_devices",
+  "capability": "E1",
+  "interface": [
+   "mms",
+   "data_rw"
+  ],
+  "attack_ics": [
+   "T0861"
+  ],
+  "control": null,
+  "hops": 2,
+  "surfaces": 1,
+  "cardinality": 11,
+  "distractors": null,
+  "search_space_bytes": 642588,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.9091,
+   "fabrication": 0.9167,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:logical_devices": 0.9091,
+   "fabrication:logical_devices": 0.9167
+  }
+ },
+ {
+  "id": "pcap_mms_rcb_usage",
+  "capability": "C2",
+  "interface": [
+   "mms",
+   "report"
+  ],
+  "attack_ics": [
+   "T0801",
+   "T0804"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 2,
+  "distractors": null,
+  "search_space_bytes": 642588,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.5,
+   "fabrication": 0.6667,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:report_control_blocks": 0.5,
+   "fabrication:report_control_blocks": 0.6667
+  }
+ },
+ {
+  "id": "pcap_redundancy_nodes",
+  "capability": "C2",
+  "interface": [
+   "redundancy"
+  ],
+  "attack_ics": [
+   "T0840"
+  ],
+  "control": null,
+  "hops": 2,
+  "surfaces": 1,
+  "cardinality": 8,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.875,
+   "fabrication": 0.8889,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:nodes": 0.875,
+   "fabrication:nodes": 0.8889
+  }
+ },
+ {
+  "id": "pcap_sv_sample_rates",
+  "capability": "C2",
+  "interface": [
+   "sv"
+  ],
+  "attack_ics": [
+   "T0801"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 3,
+  "distractors": null,
+  "search_space_bytes": 9898636,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.6667,
+   "fabrication": 0.75,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:streams": 0.6667,
+   "fabrication:streams": 0.75
+  }
+ },
+ {
+  "id": "pcap_sv_spoof_preconditions",
+  "capability": "P4",
+  "interface": [
+   "sv"
+  ],
+  "attack_ics": [
+   "T0855",
+   "T0832"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 6,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8333,
+   "fabrication": 0.8333,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:frame": 0.8333,
+   "fabrication:frame": 0.8333,
+   "omission:frame.appid": 0.8333,
+   "omission:frame.asdu_per_frame": 0.8333,
+   "omission:frame.conf_rev": 0.8333,
+   "omission:frame.destination_mac": 0.8333,
+   "omission:frame.smp_synch": 0.8333,
+   "omission:frame.sv_id": 0.8333
+  }
+ },
+ {
+  "id": "pcap_sv_stream_inventory",
+  "capability": "E1",
+  "interface": [
+   "sv"
+  ],
+  "attack_ics": [
+   "T0842"
+  ],
+  "control": "floor",
+  "hops": 1,
+  "surfaces": 1,
+  "cardinality": 3,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.6667,
+   "fabrication": 0.75,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:streams": 0.6667,
+   "fabrication:streams": 0.75
+  }
+ },
+ {
+  "id": "pcap_sv_sync_audit",
+  "capability": "C2",
+  "interface": [
+   "sv",
+   "time_sync"
+  ],
+  "attack_ics": [
+   "T0801"
+  ],
+  "control": null,
+  "hops": 2,
+  "surfaces": 1,
+  "cardinality": 4,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8,
+   "fabrication": 0.85,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:streams": 0.8,
+   "fabrication:streams": 0.85,
+   "omission:transitions": 0.6,
+   "fabrication:transitions": 0.8
+  }
+ },
+ {
+  "id": "pcap_tal_audit",
+  "capability": "D3",
+  "interface": [
+   "goose"
+  ],
+  "attack_ics": [
+   "T0815",
+   "T0814"
+  ],
+  "control": null,
+  "hops": 2,
+  "surfaces": 1,
+  "cardinality": 7,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.8833,
+   "fabrication": 0.9,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:streams": 0.8833,
+   "fabrication:streams": 0.9,
+   "omission:longest_blind_window": 0.7,
+   "fabrication:longest_blind_window": 0.7
+  }
+ },
+ {
+  "id": "pcap_time_source_dependency",
+  "capability": "P4",
+  "interface": [
+   "time_sync",
+   "sv"
+  ],
+  "attack_ics": [
+   "T0814",
+   "T0832"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 7,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.88,
+   "fabrication": 0.88,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:grandmaster": 0.88,
+   "fabrication:grandmaster": 0.88,
+   "omission:grandmaster.clock_identity": 0.88,
+   "omission:grandmaster.domain": 0.88,
+   "omission:grandmaster.priority1": 0.88,
+   "omission:grandmaster.source_mac": 0.88,
+   "omission:grandmaster.steps_removed": 0.88,
+   "omission:unsynchronised_streams": 0.8,
+   "fabrication:unsynchronised_streams": 0.8667
+  }
+ },
+ {
+  "id": "pcap_trip_event_reconstruction",
+  "capability": "C2",
+  "interface": [
+   "goose"
+  ],
+  "attack_ics": [
+   "T0801",
+   "T0842"
+  ],
+  "control": null,
+  "hops": 3,
+  "surfaces": 1,
+  "cardinality": 4,
+  "distractors": null,
+  "search_space_bytes": 36783740,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.7667,
+   "fabrication": 0.825,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:sequence": 0.7667,
+   "fabrication:sequence": 0.825,
+   "omission:first_publisher": 0.7,
+   "fabrication:first_publisher": 0.7
+  }
+ },
+ {
+  "id": "pcap_unmanaged_publishers",
+  "capability": "D3",
+  "interface": [
+   "goose",
+   "sv",
+   "scl_ied"
+  ],
+  "attack_ics": [
+   "T0840",
+   "T0842"
+  ],
+  "control": null,
+  "hops": 4,
+  "surfaces": 2,
+  "cardinality": 4,
+  "distractors": 5,
+  "search_space_bytes": 43900969,
+  "probe_scores": {
+   "correct": 1.0,
+   "equivalent": 1.0,
+   "omission": 0.75,
+   "fabrication": 0.8,
+   "prompt_echo": 0.0,
+   "hint_only": 0.0,
+   "empty": 0.0,
+   "omission:unmanaged": 0.75,
+   "fabrication:unmanaged": 0.8
+  }
+ }
+]

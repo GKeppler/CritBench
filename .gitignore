@@ -34,3 +34,6 @@ critbench/gridnet_env/workspace/**/*.log
 # clone painful. Kept out of git; see gridnet_env/README.md for how to obtain
 # them. Without loot/, the gridnet family cannot be brought up.
 critbench/gridnet_env/loot/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

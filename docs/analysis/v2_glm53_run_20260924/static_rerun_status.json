@@ -1,0 +1,56 @@
+{
+  "pcap": {
+    "status": "finished",
+    "started_utc": "2026-09-24T08:16:26.730608+00:00",
+    "command": [
+      "inspect",
+      "eval",
+      "inspect_critbench/evals.py@critbench_pcap_v2",
+      "--model",
+      "openrouter/z-ai/glm-5.3-flash",
+      "--max-sandboxes",
+      "4",
+      "--max-samples",
+      "4",
+      "--no-fail-on-error",
+      "--max-retries",
+      "3",
+      "--display",
+      "none",
+      "--log-dir",
+      "logs/v2-glm53-nohint-20260924/pcap-rerun"
+    ],
+    "PYTHONPATH": "/home/sb7059/git/Critbench-Code/critbench",
+    "reason": "Initial launch failed importing tasksv2 before sample execution.",
+    "concurrency": "4 per family, concurrent with VM",
+    "exit_code": 0,
+    "finished_utc": "2026-09-24T08:32:48.010199+00:00"
+  },
+  "scl": {
+    "status": "finished",
+    "started_utc": "2026-09-24T08:16:26.731267+00:00",
+    "command": [
+      "inspect",
+      "eval",
+      "inspect_critbench/evals.py@critbench_scl_v2",
+      "--model",
+      "openrouter/z-ai/glm-5.3-flash",
+      "--max-sandboxes",
+      "4",
+      "--max-samples",
+      "4",
+      "--no-fail-on-error",
+      "--max-retries",
+      "3",
+      "--display",
+      "none",
+      "--log-dir",
+      "logs/v2-glm53-nohint-20260924/scl-rerun"
+    ],
+    "PYTHONPATH": "/home/sb7059/git/Critbench-Code/critbench",
+    "reason": "Initial launch failed importing tasksv2 before sample execution.",
+    "concurrency": "4 per family, concurrent with VM",
+    "exit_code": 0,
+    "finished_utc": "2026-09-24T08:36:09.396222+00:00"
+  }
+}

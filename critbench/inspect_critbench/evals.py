@@ -3,6 +3,9 @@
 Run from the ``critbench/`` directory::
 
     inspect eval inspect_critbench/evals.py@critbench_scl       --model openai/gpt-4o
+    inspect eval inspect_critbench/evals.py@critbench_scl_v2    --model openai/gpt-4o
+    inspect eval inspect_critbench/evals.py@critbench_pcap_v2   --model openai/gpt-4o
+    inspect eval inspect_critbench/evals.py@critbench_iec61850_v2 --model openai/gpt-4o
     inspect eval inspect_critbench/evals.py@critbench_pcap      --model openai/gpt-4o
     inspect eval inspect_critbench/evals.py@critbench_iec61850  --model openai/gpt-4o
     inspect eval inspect_critbench/evals.py@critbench_grfics    --model openai/gpt-4o --max-sandboxes 1
@@ -38,7 +41,7 @@ from inspect_ai.tool import bash
 
 from inspect_critbench.dataset import critbench_dataset
 from inspect_critbench.gridnet_range import gridnet_release, gridnet_reset
-from inspect_critbench.scorer import critbench_scorer
+from inspect_critbench.scorer import critbench_scorer, v2_summary
 
 _COMPOSE = Path(__file__).resolve().parent / "compose"
 
@@ -61,7 +64,7 @@ def _critbench_task(
     compose: str,
     state_source: str | None,
     *,
-    hint: bool,
+    hint: bool | str,
     turn_limit: int,
     token_limit: int,
     time_limit: int,
@@ -69,8 +72,10 @@ def _critbench_task(
     setup: Solver | None = None,
     cleanup: Callable[[TaskState], Awaitable[None]] | None = None,
 ) -> Task:
+    dataset = critbench_dataset(family, hint=hint)
+    is_v2 = all((sample.metadata or {}).get("benchmark_version") == 2 for sample in dataset)
     return Task(
-        dataset=critbench_dataset(family, hint=hint),
+        dataset=dataset,
         # Task.setup, not the head of the solver chain: Inspect documents it as
         # the step that "should not be substituted when another solver is used
         # with the task", i.e. it still runs under `inspect eval --solver ...`.
@@ -83,6 +88,7 @@ def _critbench_task(
         # limit and interrupt included.
         cleanup=cleanup,
         scorer=critbench_scorer(state_source=state_source),
+        metrics=[v2_summary()] if is_v2 else None,
         sandbox=("docker", str(_COMPOSE / compose)),
         # Limits are task-level because Sample carries none, and because the
         # per-task max_turns/token_budget/timeout in the YAMLs are already dead
@@ -91,7 +97,7 @@ def _critbench_task(
         turn_limit=turn_limit,
         token_limit=token_limit,
         time_limit=time_limit,
-        version=1,
+        version=2 if is_v2 else 1,
     )
 
 
@@ -112,6 +118,30 @@ def critbench_scl(
 
 
 @task
+def critbench_scl_v2(
+    hint: str = "",
+    turn_limit: int = 50,
+    token_limit: int = 1_000_000,
+    time_limit: int = 600,
+    bash_timeout: int = 180,
+) -> Task:
+    """19 rebuilt IEC 61850 SCL tasks (ADR-0003). JSON answers, derived labels.
+
+    Not a repair of `critbench_scl` and not comparable with it: different
+    tasks, different answer contract, different grader. Run both only as an
+    explicitly paired original/repaired condition, never pooled.
+
+    `hint` is a treatment level, not a flag: "" (H0, the default), "h1"
+    (conceptual) or "h2" (locator). Report which level produced a score.
+    """
+    return _critbench_task(
+        "../tasksv2/scl", "static.yaml", None,
+        hint=hint, turn_limit=turn_limit, token_limit=token_limit,
+        time_limit=time_limit, bash_timeout=bash_timeout,
+    )
+
+
+@task
 def critbench_pcap(
     hint: bool = False,
     turn_limit: int = 50,
@@ -122,6 +152,28 @@ def critbench_pcap(
     """30 packet-capture analysis tasks (GOOSE/MMS/IEC 104). Answer-text graded."""
     return _critbench_task(
         "pcaps_tasks", "static.yaml", None,
+        hint=hint, turn_limit=turn_limit, token_limit=token_limit,
+        time_limit=time_limit, bash_timeout=bash_timeout,
+    )
+
+
+@task
+def critbench_pcap_v2(
+    hint: str = "",
+    turn_limit: int = 50,
+    token_limit: int = 1_000_000,
+    time_limit: int = 900,
+    bash_timeout: int = 300,
+) -> Task:
+    """16 rebuilt packet-capture tasks (ADR-0003). JSON answers, derived labels.
+
+    Longer default limits than the SCL family: the process-bus capture holds
+    134k frames, so a single tshark pass over it is not a 3-second command.
+
+    Not comparable with `critbench_pcap`; see `critbench_scl_v2`.
+    """
+    return _critbench_task(
+        "../tasksv2/pcap", "static.yaml", None,
         hint=hint, turn_limit=turn_limit, token_limit=token_limit,
         time_limit=time_limit, bash_timeout=bash_timeout,
     )
@@ -217,6 +269,31 @@ def critbench_gridnet(
         time_limit=time_limit, bash_timeout=bash_timeout,
         setup=gridnet_reset(str(script), timeout=reset_timeout),
         cleanup=gridnet_release,
+    )
+
+
+@task
+def critbench_iec61850_v2(
+    hint: str = "",
+    turn_limit: int = 60,
+    token_limit: int = 1_000_000,
+    time_limit: int = 900,
+    bash_timeout: int = 180,
+) -> Task:
+    """10 rebuilt live IEC 61850 / IEC 104 tasks (ADR-0003).
+
+    Six carry `live_state` checks: the scorer re-reads /live_state on the IED
+    container and grades the device, never the answer. Action tasks also grade
+    the value the agent reports having seen BEFORE acting against the frozen
+    initial baseline, so an agent that reports a change it never made fails
+    even when the report itself is perfect.
+
+    Not comparable with `critbench_iec61850`; see `critbench_scl_v2`.
+    """
+    return _critbench_task(
+        "../tasksv2/vm", "iec61850.yaml", "iec61850",
+        hint=hint, turn_limit=turn_limit, token_limit=token_limit,
+        time_limit=time_limit, bash_timeout=bash_timeout,
     )
 
 

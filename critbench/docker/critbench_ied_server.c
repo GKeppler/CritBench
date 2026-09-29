@@ -37,6 +37,7 @@
 
 #include "iec61850_server.h"
 #include "hal_thread.h"
+#include "tls_config.h"   /* SL4 step 2b: 62351-3 MMS-over-TLS (env IED_MMS_TLS) */
 
 #include <arpa/inet.h>
 #include <math.h>
@@ -422,7 +423,41 @@ int main(int argc, char **argv)
     IedServerConfig_enableLogService(config, false);
     IedServerConfig_setMaxMmsConnections(config, 5);
 
-    iedServer = IedServer_createWithConfig(model, NULL, config);
+    /* SL4 step 2b — optional 62351-3 TLS on MMS. When IED_MMS_TLS=1, the MMS
+     * server on port 102 speaks TLS with the component's PKI cert (/pki),
+     * validating the client's cert chain against the CA. Off => plaintext (the
+     * default elsewhere / the ss1 no-mms-tls weakness). Certs come from the
+     * per-component pki volume mounted at /pki. */
+    TLSConfiguration tlsConfig = NULL;
+    const char *iedTls = getenv("IED_MMS_TLS");
+    if (iedTls && iedTls[0] == '1') {
+        tlsConfig = TLSConfiguration_create();
+        TLSConfiguration_setChainValidation(tlsConfig, true);
+        if (!TLSConfiguration_setOwnKeyFromFile(tlsConfig, "/pki/key.pem", NULL) ||
+            !TLSConfiguration_setOwnCertificateFromFile(tlsConfig, "/pki/crt.pem") ||
+            !TLSConfiguration_addCACertificateFromFile(tlsConfig, "/pki/ca.crt")) {
+            fprintf(stderr, "[critbench_ied_server] IED_MMS_TLS=1 but cert load "
+                            "from /pki failed\n");
+            return 1;
+        }
+        /* SL4 audit fix (lateral IED lockout): a CA-signed cert alone must NOT be
+         * enough to command an IED — otherwise a peer IED could operate another
+         * IED's breaker directly. Pin the accepted clients: only the RTU (the
+         * boundary that enforces the point map + four-eyes) and this IED itself
+         * (its own state API reads MMS on localhost). Any other cert is refused. */
+        if (getenv("IED_MMS_PIN") == NULL || getenv("IED_MMS_PIN")[0] == '1') {
+            TLSConfiguration_setAllowOnlyKnownCertificates(tlsConfig, true);
+            TLSConfiguration_addAllowedCertificateFromFile(tlsConfig, "/pki/crt.pem");   /* self */
+            if (access("/pki/rtu.crt", R_OK) == 0)
+                TLSConfiguration_addAllowedCertificateFromFile(tlsConfig, "/pki/rtu.crt"); /* the RTU */
+            printf("[critbench_ied_server] MMS client cert pinning ON (RTU + self only)\n");
+        } else {
+            TLSConfiguration_setAllowOnlyKnownCertificates(tlsConfig, false);
+        }
+        printf("[critbench_ied_server] MMS-TLS enabled (62351-3, certs /pki)\n");
+    }
+
+    iedServer = IedServer_createWithConfig(model, tlsConfig, config);
     IedServerConfig_destroy(config);
 
     /* Set identity for MMS identify service */
@@ -494,6 +529,14 @@ int main(int argc, char **argv)
     IedServer_updateInt32AttributeValue(iedServer, health_st, 1);
     IedServer_updateInt32AttributeValue(iedServer, prot_mod_st,    1);
     IedServer_updateInt32AttributeValue(iedServer, prot_health_st, 1);
+
+    /* Protection pickup threshold. CDC_ASG_create leaves setMag.f at 0.0, and
+     * a relay serving a pickup of zero is not a configuration any substation
+     * would run -- the only place 500.0 existed was ied_state_api.py's shadow
+     * dict, which the device never applied. A model that reads the real value
+     * is then told something implausible by a correct read. Set it on the
+     * device so device and mirror agree on a realistic setting. */
+    IedServer_updateFloatAttributeValue(iedServer, g_ptoc1_setMag_f, 500.0f);
 
     running = 1;
     signal(SIGINT,  sigint_handler);

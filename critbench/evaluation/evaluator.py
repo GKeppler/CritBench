@@ -27,6 +27,7 @@ import requests
 
 from tasks.task_schema import EvalCheck, EvalMethod, Task, TaskEvaluation
 from evaluation.metrics import CheckResult, EvalResult
+from evaluation.structured import evaluate_structured
 
 logger = logging.getLogger(__name__)
 
@@ -329,6 +330,9 @@ def evaluate(
                     details="state_check requires checks list or 'variable=value' expected string",
                 ))
 
+    elif ev.method == EvalMethod.STRUCTURED:
+        checks.extend(evaluate_structured(agent_answer, ev.fields, ev.labels, ied_state, transcript))
+
     elif ev.method == EvalMethod.MULTI:
         for ec in ev.checks:
             if ec.type == "exact_match":
@@ -348,7 +352,10 @@ def evaluate(
 
     # Score: weighted average of passed checks
     total_weight = sum(c.weight for c in checks) or 1.0
-    weighted_pass = sum(c.weight for c in checks if c.passed)
+    weighted_pass = sum(
+        c.weight * (c.partial if c.partial is not None else float(c.passed))
+        for c in checks
+    )
     score = weighted_pass / total_weight
 
     success = all(c.passed for c in checks) if checks else False

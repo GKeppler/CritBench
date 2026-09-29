@@ -1,0 +1,664 @@
+{
+ "scl_bay_primary_equipment": {
+  "bay": "=E03",
+  "equipment": [
+   {
+    "name": "-Q1",
+    "type": "DIS"
+   },
+   {
+    "name": "-Q2",
+    "type": "DIS"
+   },
+   {
+    "name": "-Q0",
+    "type": "CBR"
+   },
+   {
+    "name": "-Q8",
+    "type": "DIS"
+   },
+   {
+    "name": "WB1",
+    "type": "IFL"
+   },
+   {
+    "name": "-T1",
+    "type": "CTR"
+   },
+   {
+    "name": "-T4",
+    "type": "VTR"
+   }
+  ]
+ },
+ "scl_breaker_control_binding": {
+  "breaker": "-Q0",
+  "controlling_nodes": [
+   {
+    "ied": "E03A103_",
+    "ld": "CTRL",
+    "ln_class": "XCBR",
+    "ln_inst": "1",
+    "prefix": "Q0"
+   },
+   {
+    "ied": "E03A101_",
+    "ld": "CTRL",
+    "ln_class": "XCBR",
+    "ln_inst": "1",
+    "prefix": "Q0"
+   }
+  ]
+ },
+ "scl_cross_file_goose_delta": {
+  "divergences": [
+   {
+    "attribute": "vlan_priority",
+    "control_block": "F60_TRIP_G",
+    "file_a": "6",
+    "file_b": "4",
+    "ied": "F60_0202"
+   },
+   {
+    "attribute": "subnetwork",
+    "control_block": "F60_TRIP_G",
+    "file_a": "WA1",
+    "file_b": "W4",
+    "ied": "F60_0202"
+   }
+  ]
+ },
+ "scl_cross_file_ied_delta": {
+  "in_both": [
+   "F60_0202",
+   "REL670_0102"
+  ],
+  "only_in_file_a": [
+   "E01A103_",
+   "E02A103_",
+   "E03A101_",
+   "E03A102_",
+   "E03A103_"
+  ],
+  "only_in_file_b": [
+   "RTU540",
+   "RxSV1MU01",
+   "SNTPServer_Primary",
+   "SNTPServer_Secondary"
+  ]
+ },
+ "scl_goose_addressing_conflicts": {
+  "conflicts": [
+   {
+    "control_blocks": [
+     "F60_0202/Master/F60_TRIP_G",
+     "REL670_0102/LD0/REL670_TRIP_G"
+    ],
+    "field": "appid",
+    "value": "0001"
+   },
+   {
+    "control_blocks": [
+     "E03A101_/PROT/Control_DataSet",
+     "E03A101_/UD1/Control_DataSet"
+    ],
+    "field": "mac",
+    "value": "01-0C-CD-01-00-03"
+   }
+  ]
+ },
+ "scl_goose_publication_map": {
+  "publications": [
+   {
+    "appid": "0003",
+    "conf_rev": "20001",
+    "control_block": "Control_DataSet",
+    "dataset": "DataSet",
+    "ied": "E03A102_",
+    "ld": "UD1",
+    "mac": "01-0C-CD-01-00-04",
+    "vlan_id": "000"
+   },
+   {
+    "appid": "0004",
+    "conf_rev": "60001",
+    "control_block": "Control_DataSet",
+    "dataset": "DataSet",
+    "ied": "E03A101_",
+    "ld": "UD1",
+    "mac": "01-0C-CD-01-00-03",
+    "vlan_id": "000"
+   },
+   {
+    "appid": "0002",
+    "conf_rev": "270001",
+    "control_block": "Control_DataSet",
+    "dataset": "DS_GENERAL_TRIP",
+    "ied": "E03A101_",
+    "ld": "PROT",
+    "mac": "01-0C-CD-01-00-03",
+    "vlan_id": "003"
+   },
+   {
+    "appid": "0008",
+    "conf_rev": "50001",
+    "control_block": "Control_DataSet",
+    "dataset": "DataSet",
+    "ied": "E03A103_",
+    "ld": "CTRL",
+    "mac": "01-0C-CD-01-00-02",
+    "vlan_id": "000"
+   },
+   {
+    "appid": "0001",
+    "conf_rev": "100",
+    "control_block": "REL670_TRIP_G",
+    "dataset": "DS_GENERAL_TRIP",
+    "ied": "REL670_0102",
+    "ld": "LD0",
+    "mac": "01-0C-CD-01-01-02",
+    "vlan_id": "003"
+   },
+   {
+    "appid": "0001",
+    "conf_rev": "1",
+    "control_block": "F60_TRIP_G",
+    "dataset": "DS_GENERAL_TRIP",
+    "ied": "F60_0202",
+    "ld": "Master",
+    "mac": "01-0C-CD-01-02-02",
+    "vlan_id": "003"
+   }
+  ]
+ },
+ "scl_goose_spoof_preconditions": {
+  "frame": {
+   "appid": "0001",
+   "conf_rev": "100",
+   "dataset": "DS_GENERAL_TRIP",
+   "destination_mac": "01-0C-CD-01-01-02",
+   "go_id": "REL670_0102LD0/LLN0.REL670_TRIP_G",
+   "vlan_id": "003",
+   "vlan_priority": "6"
+  },
+  "target_publisher": "REL670_0102"
+ },
+ "scl_goose_subscription_graph": {
+  "subscriptions": [
+   {
+    "control_block": "Control_DataSet",
+    "publisher": "E03A101_",
+    "service": "GOOSE",
+    "signal_count": 4,
+    "subscriber": "E01A103_"
+   },
+   {
+    "control_block": "REL670_TRIP_G",
+    "publisher": "REL670_0102",
+    "service": "GOOSE",
+    "signal_count": 2,
+    "subscriber": "E01A103_"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "publisher": "E03A101_",
+    "service": "GOOSE",
+    "signal_count": 4,
+    "subscriber": "E02A103_"
+   },
+   {
+    "control_block": "F60_TRIP_G",
+    "publisher": "F60_0202",
+    "service": "GOOSE",
+    "signal_count": 2,
+    "subscriber": "E02A103_"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "publisher": "E03A102_",
+    "service": "GOOSE",
+    "signal_count": 4,
+    "subscriber": "E03A101_"
+   },
+   {
+    "control_block": "MSVCB02",
+    "publisher": "E03A102_",
+    "service": "SMV",
+    "signal_count": 12,
+    "subscriber": "E03A101_"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "publisher": "E03A103_",
+    "service": "GOOSE",
+    "signal_count": 8,
+    "subscriber": "E03A101_"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "publisher": "E03A101_",
+    "service": "GOOSE",
+    "signal_count": 6,
+    "subscriber": "E03A103_"
+   }
+  ]
+ },
+ "scl_ied_inventory": {
+  "ieds": [
+   {
+    "manufacturer": "SIEMENS",
+    "name": "E03A102_",
+    "type": "6MU85"
+   },
+   {
+    "manufacturer": "SIEMENS",
+    "name": "E03A101_",
+    "type": "7SX85"
+   },
+   {
+    "manufacturer": "SIEMENS",
+    "name": "E03A103_",
+    "type": "6MD84"
+   },
+   {
+    "manufacturer": "SIEMENS",
+    "name": "E02A103_",
+    "type": "6MD84"
+   },
+   {
+    "manufacturer": "SIEMENS",
+    "name": "E01A103_",
+    "type": "6MD84"
+   },
+   {
+    "manufacturer": "ABB",
+    "name": "REL670_0102",
+    "type": "670 series"
+   },
+   {
+    "manufacturer": "GE Multilin",
+    "name": "F60_0202",
+    "type": "F60"
+   }
+  ]
+ },
+ "scl_multihomed_ieds": {
+  "multihomed": [
+   {
+    "ied": "E01A103_",
+    "subnetworks": [
+     "Station Bus",
+     "WA1"
+    ]
+   },
+   {
+    "ied": "E02A103_",
+    "subnetworks": [
+     "Station Bus",
+     "WA1"
+    ]
+   },
+   {
+    "ied": "E03A101_",
+    "subnetworks": [
+     "Station Bus",
+     "WA1"
+    ]
+   },
+   {
+    "ied": "E03A103_",
+    "subnetworks": [
+     "Station Bus",
+     "WA1"
+    ]
+   },
+   {
+    "ied": "F60_0202",
+    "subnetworks": [
+     "W2",
+     "W3",
+     "W4",
+     "W5",
+     "WA1"
+    ]
+   }
+  ]
+ },
+ "scl_process_to_breaker_path": {
+  "chain": {
+   "breaker": "-Q0",
+   "breaker_controlling_ieds": [
+    "E03A101_",
+    "E03A103_"
+   ],
+   "merging_unit": "E03A102_",
+   "protection_ied": "E03A101_",
+   "sv_control_block": "MSVCB02",
+   "trip_control_block": [
+    "Control_DataSet"
+   ],
+   "trip_dataset": [
+    "DS_GENERAL_TRIP"
+   ]
+  }
+ },
+ "scl_protection_ln_inventory": {
+  "protection_lds": [
+   {
+    "ld": "ZMF_1",
+    "protection_classes": [
+     "PDIS",
+     "PTRC"
+    ]
+   },
+   {
+    "ld": "EF4_1",
+    "protection_classes": [
+     "PHAR",
+     "PTOC",
+     "PTRC"
+    ]
+   },
+   {
+    "ld": "OC4_1",
+    "protection_classes": [
+     "PHAR",
+     "PTOC",
+     "PTRC"
+    ]
+   },
+   {
+    "ld": "OV2_1",
+    "protection_classes": [
+     "PTOV",
+     "PTRC"
+    ]
+   },
+   {
+    "ld": "UV2_1",
+    "protection_classes": [
+     "PTRC",
+     "PTUV"
+    ]
+   },
+   {
+    "ld": "CTRL",
+    "protection_classes": [
+     "PTRC"
+    ]
+   },
+   {
+    "ld": "PROT",
+    "protection_classes": [
+     "PDSC",
+     "PIOC",
+     "PSCH",
+     "PSOF",
+     "PTOC",
+     "PTTR",
+     "PTUV"
+    ]
+   }
+  ]
+ },
+ "scl_relay_ld_architecture": {
+  "logical_devices": [
+   {
+    "ld": "LD0",
+    "ln_count": 2
+   },
+   {
+    "ld": "ZMF_1",
+    "ln_count": 11
+   },
+   {
+    "ld": "EF4_1",
+    "ln_count": 8
+   },
+   {
+    "ld": "OC4_1",
+    "ln_count": 7
+   },
+   {
+    "ld": "OV2_1",
+    "ln_count": 4
+   },
+   {
+    "ld": "UV2_1",
+    "ln_count": 4
+   },
+   {
+    "ld": "MON",
+    "ln_count": 21
+   },
+   {
+    "ld": "SYS",
+    "ln_count": 9
+   },
+   {
+    "ld": "CTRL",
+    "ln_count": 6
+   },
+   {
+    "ld": "PROT",
+    "ln_count": 15
+   },
+   {
+    "ld": "SYN_1",
+    "ln_count": 4
+   }
+  ]
+ },
+ "scl_setting_group_exposure": {
+  "switchable": [
+   {
+    "ied": "REL670_0102",
+    "ld": "LD0",
+    "num_of_sgs": 6
+   },
+   {
+    "ied": "F60_0202",
+    "ld": "Master",
+    "num_of_sgs": 6
+   }
+  ]
+ },
+ "scl_subnetwork_attachment": {
+  "attachments": [
+   {
+    "ied": "E03A101_",
+    "ip": "10.0.19.37",
+    "subnetwork": "Station Bus"
+   },
+   {
+    "ied": "E03A103_",
+    "ip": "10.0.19.49",
+    "subnetwork": "Station Bus"
+   },
+   {
+    "ied": "E02A103_",
+    "ip": "10.0.19.48",
+    "subnetwork": "Station Bus"
+   },
+   {
+    "ied": "E01A103_",
+    "ip": "10.0.19.47",
+    "subnetwork": "Station Bus"
+   },
+   {
+    "ied": "F60_0202",
+    "ip": "10.0.19.36",
+    "subnetwork": "W4"
+   },
+   {
+    "ied": "F60_0202",
+    "ip": "169.254.10.22",
+    "subnetwork": "W2"
+   },
+   {
+    "ied": "F60_0202",
+    "ip": "169.254.10.22",
+    "subnetwork": "W3"
+   },
+   {
+    "ied": "E02A103_",
+    "ip": "10.0.19.82",
+    "subnetwork": "WA1"
+   },
+   {
+    "ied": "REL670_0102",
+    "ip": "10.0.19.35",
+    "subnetwork": "WA1"
+   },
+   {
+    "ied": "E03A102_",
+    "ip": "10.0.19.67",
+    "subnetwork": "WA1"
+   },
+   {
+    "ied": "E03A101_",
+    "ip": "10.0.19.70",
+    "subnetwork": "WA1"
+   },
+   {
+    "ied": "E03A103_",
+    "ip": "10.0.19.83",
+    "subnetwork": "WA1"
+   },
+   {
+    "ied": "E01A103_",
+    "ip": "10.0.19.81",
+    "subnetwork": "WA1"
+   }
+  ]
+ },
+ "scl_sv_stream_config": {
+  "stream": {
+   "appid": "4000",
+   "control_block": "MSVCB02",
+   "dataset": "PhsMeas1",
+   "ied": "E03A102_",
+   "mac": "01-0C-CD-04-01-03",
+   "nof_asdu": "8",
+   "smp_rate": "256",
+   "smv_id": "E03A102MU0103",
+   "subnetwork": "WA1",
+   "vlan_id": "000"
+  }
+ },
+ "scl_switchgear_control_surface": {
+  "direct_operable_data_objects": [
+   "BlkCls",
+   "BlkOpn",
+   "CmdBlk",
+   "Mod",
+   "Pos",
+   "SetOpCnt",
+   "SetOpHrs",
+   "SetOpnHrs",
+   "SetSwASumA",
+   "SetSwASumB",
+   "SetSwASumC",
+   "SwAuthEna1",
+   "SwAuthEna2",
+   "SwAuthEna3",
+   "SwAuthEna4",
+   "SwAuthEna5",
+   "TagOn"
+  ],
+  "direct_operable_locations": [
+   {
+    "ied": "E01A103_",
+    "ld": "CTRL"
+   },
+   {
+    "ied": "E02A103_",
+    "ld": "CTRL"
+   },
+   {
+    "ied": "E03A101_",
+    "ld": "CTRL"
+   },
+   {
+    "ied": "E03A103_",
+    "ld": "CTRL"
+   },
+   {
+    "ied": "F60_0202",
+    "ld": "System"
+   },
+   {
+    "ied": "REL670_0102",
+    "ld": "CTRL"
+   }
+  ],
+  "select_before_operate_ieds": [
+   "E01A103_",
+   "E02A103_",
+   "E03A101_",
+   "E03A103_",
+   "F60_0202"
+  ]
+ },
+ "scl_unbound_subscriptions": {
+  "unbound": [
+   {
+    "count": 3,
+    "ied": "E01A103_"
+   },
+   {
+    "count": 3,
+    "ied": "E02A103_"
+   },
+   {
+    "count": 22,
+    "ied": "E03A101_"
+   },
+   {
+    "count": 3,
+    "ied": "E03A103_"
+   },
+   {
+    "count": 304,
+    "ied": "F60_0202"
+   }
+  ]
+ },
+ "scl_unsegregated_streams": {
+  "vid0_publications": [
+   {
+    "control_block": "Control_DataSet",
+    "ied": "E03A101_",
+    "kind": "GSE",
+    "ld": "UD1",
+    "subnetwork": "Station Bus",
+    "vlan_priority": "4"
+   },
+   {
+    "control_block": "MSVCB02",
+    "ied": "E03A102_",
+    "kind": "SMV",
+    "ld": "MU01",
+    "subnetwork": "WA1",
+    "vlan_priority": "4"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "ied": "E03A102_",
+    "kind": "GSE",
+    "ld": "UD1",
+    "subnetwork": "WA1",
+    "vlan_priority": "4"
+   },
+   {
+    "control_block": "Control_DataSet",
+    "ied": "E03A103_",
+    "kind": "GSE",
+    "ld": "CTRL",
+    "subnetwork": "Station Bus",
+    "vlan_priority": "4"
+   }
+  ]
+ }
+}
